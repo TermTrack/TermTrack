@@ -55,45 +55,33 @@ impl Tri {
         a.cross(b).norm()
     }
 
-    pub fn hit(self, ro: Vec3, rd: Vec3) -> bool {
+    pub fn hit(self, ro: Vec3, rd: Vec3) -> (bool, f64) {
         let rd = rd.norm();
         let n = self.normal();
-        let d = -n.dot(self.v0);
-        if let Some(t) = self.distance(ro, rd) {
-            if t < 0. {
-                return false;
-            }
-            let p = ro + rd * t;
-            return self.check_point_inside(p);
-        } else {
-            return false;
-        }
-    }
 
-    pub fn distance(self, ro: Vec3, rd: Vec3) -> Option<f64> {
-        let rd = rd.norm();
-        let n = self.normal();
         let d = -n.dot(self.v0);
         if n.dot(rd) == 0. {
-            return None;
+            return (false, 0.);
         }
-        Some(-(n.dot(ro) + d) / n.dot(rd))
-    }
 
-    fn check_point_inside(&self, p: Vec3) -> bool {
+        let distance = -(n.dot(ro) + d) / n.dot(rd);
+
+        if distance < 0. {
+            return (false, 0.);
+        }
+        let p = ro + rd * distance;
+
         let e0 = self.v1 - self.v0;
         let e1 = self.v2 - self.v1;
         let e2 = self.v0 - self.v2;
-
-        let n = self.normal();
 
         let c0 = p - self.v0;
         let c1 = p - self.v1;
         let c2 = p - self.v2;
         if n.dot(e0.cross(c0)) > 0. && n.dot(e1.cross(c1)) > 0. && n.dot(e2.cross(c2)) > 0. {
-            return true;
+            return (true, distance);
         }
-        false
+        (false, 0.)
     }
 }
 

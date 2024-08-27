@@ -14,8 +14,6 @@ impl Game {
     pub fn run(&mut self) {
         // load map files
         // generate map meshes
-        let frame_duration = Duration::from_millis(200);
-        let mut start = Instant::now();
         loop {
             // get list off all vertices
             let verts = vec![
@@ -27,14 +25,11 @@ impl Game {
 
             let mesh = Mesh::new(verts);
 
-            if Instant::now() - start >= frame_duration {
-                self.renderer.render(&self.camera, mesh);
-                start = Instant::now();
-            }
+            self.renderer.render(&self.camera, mesh);
             // render vertices
             // handle input
 
-            if poll(Duration::from_millis(20)).unwrap() {
+            if poll(Duration::from_millis(5)).unwrap() {
                 match read().unwrap() {
                     Event::Key(event) => match event {
                         KeyEvent {

@@ -1,13 +1,19 @@
 use crate::{camera::Camera, mat::*};
 use crossterm;
+use rayon::prelude::*;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::thread;
 use term_size::dimensions;
 
-const RENDER_DIST: f64 = 100000.;
+use std::time::Instant;
+
+const RENDER_DIST: f64 = 100.;
 
 pub struct Screen {
     pub w: usize,
     pub h: usize,
-    pub buffer: String,
+    pub buffer: Vec<Vec<Vec3>>,
     raw: (),
 }
 
@@ -25,25 +31,46 @@ impl Screen {
         Screen {
             w,
             h,
-            buffer: String::from("\x1b[H"),
+            buffer: vec![
+                vec![
+                    Vec3 {
+                        x: 0.,
+                        y: 0.,
+                        z: 0.
+                    };
+                    w
+                ];
+                h
+            ],
             raw,
         }
     }
 
-    fn push_color(&mut self, col: Vec3) {
-        self.buffer += &format!(
-            "\x1b[48;2;{};{};{}m ",
-            col.x as u8, col.y as u8, col.z as u8
-        );
-    }
-
-    fn nl(&mut self) {
-        self.buffer += "\r\n"
-    }
-
     fn flush(&mut self) {
-        print!("{}", self.buffer);
-        self.buffer = String::from("\x1b[H");
+        let mut buffer = String::new();
+        for y in 0..self.buffer.len() {
+            for x in 0..self.buffer[y].len() {
+                buffer += &format!(
+                    "\x1b[48;2;{};{};{}m ",
+                    self.buffer[y][x].x as u8, self.buffer[y][x].y as u8, self.buffer[y][x].z as u8
+                )
+            }
+            if y != self.buffer.len() - 1 {
+                buffer += "\r\n";
+            }
+        }
+        print!("\x1b[H{}", buffer);
+        self.buffer = vec![
+            vec![
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 0.
+                };
+                self.w
+            ];
+            self.h
+        ]
     }
 
     pub fn clear(&mut self) {
@@ -56,17 +83,18 @@ impl Screen {
             y: camera.pos.y + self.h as f64 / 2.,
             z: camera.pos.z - camera.fov,
         };
-        let mut tris = mesh.tris();
+        let tris = mesh.tris();
+        let buffer = &mut self.buffer;
 
-        for y in 0..self.h {
-            for x in 0..self.w {
+        buffer.par_iter_mut().enumerate().for_each(|(y, row)| {
+            for (x, pixel) in row.iter_mut().enumerate() {
                 let mut min_dist = f64::MAX;
                 let mut color = Vec3 {
                     x: 0.,
                     y: 0.,
                     z: 0.,
                 };
-                for tri in tris.iter() {
+                for tri in &tris {
                     let ray_dir = Vec3 {
                         x: x as f64 + camera.pos.x,
                         y: y as f64 + camera.pos.y,
@@ -77,21 +105,20 @@ impl Screen {
                         y: y as f64 + camera.pos.y,
                         z: 0.,
                     };
-                    if tri.hit(ray_o, ray_dir) {
-                        if tri.distance(ray_o, ray_dir).unwrap() < min_dist {
-                            min_dist = tri.distance(ray_o, ray_dir).unwrap();
+                    let (hit, distance) = tri.hit(ray_o, ray_dir);
+                    if hit {
+                        if distance < min_dist {
+                            min_dist = distance;
 
-                            color = tri.color
-                                * (1. - tri.distance(ray_o, ray_dir).unwrap() / RENDER_DIST);
+                            color = tri.color;
                         }
                     }
                 }
-                self.push_color(color);
+                color = color * (1. - min_dist / RENDER_DIST);
+                *pixel = color;
             }
-            if y != self.h - 1 {
-                self.nl();
-            }
-        }
+        });
+
         self.flush();
     }
 }
