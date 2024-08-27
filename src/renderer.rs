@@ -6,9 +6,7 @@ use std::sync::Mutex;
 use std::thread;
 use term_size::dimensions;
 
-use std::time::Instant;
-
-const RENDER_DIST: f64 = 100.;
+const RENDER_DIST: f64 = 70.;
 
 pub struct Screen {
     pub w: usize,
@@ -77,7 +75,7 @@ impl Screen {
         print!("\x1b[2J")
     }
 
-    pub fn render(&mut self, camera: &Camera, mesh: Mesh) {
+    pub fn render(&mut self, camera: &Camera, mesh: &Mesh) {
         let ray_origin = Vec3 {
             x: camera.pos.x + self.w as f64 / 2.,
             y: camera.pos.y + self.h as f64 / 2.,

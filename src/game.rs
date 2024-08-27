@@ -1,5 +1,6 @@
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
 
+use crate::loader::{self, load};
 use crate::renderer::Screen;
 use crate::{camera::Camera, mat::*};
 use core::panic;
@@ -14,18 +15,18 @@ impl Game {
     pub fn run(&mut self) {
         // load map files
         // generate map meshes
+        let frame_duration = Duration::from_millis(10);
+        let mut start = Instant::now();
+
+        let mesh = load(loader::MAP);
+
         loop {
             // get list off all vertices
-            let verts = vec![
-                (0., 0., 0.),
-                (0., 50., 0.),
-                (30., 50., 30.),
-                (255., 255., 255.),
-            ];
 
-            let mesh = Mesh::new(verts);
-
-            self.renderer.render(&self.camera, mesh);
+            if Instant::now() - start >= frame_duration {
+                self.renderer.render(&self.camera, &mesh);
+                start = Instant::now();
+            }
             // render vertices
             // handle input
 
