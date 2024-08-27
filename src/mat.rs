@@ -136,6 +136,22 @@ impl Mesh {
     pub fn tris(&self) -> Vec<Tri> {
         self.tris.clone()
     }
+
+    pub fn mut_tris(&mut self) -> &mut Vec<Tri> {
+        return &mut self.tris;
+    }
+}
+
+impl Add<Mesh> for Mesh {
+    type Output = Mesh;
+
+    fn add(self, rhs: Mesh) -> Self::Output {
+        let mut tris1 = self.tris();
+        let mut tris2 = rhs.tris();
+
+        tris1.append(&mut tris2);
+        Mesh { tris: tris1 }
+    }
 }
 
 // Operator implementation

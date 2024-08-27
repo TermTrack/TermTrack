@@ -3,6 +3,7 @@ use renderer::Screen;
 
 mod camera;
 mod game;
+mod loader;
 mod mat;
 mod renderer;
 
@@ -12,8 +13,8 @@ fn main() {
         camera: camera::Camera {
             pos: Vec3 {
                 x: 0.,
-                y: 0.,
-                z: 0.,
+                y: -30.,
+                z: 40.,
             },
             fov: 1.,
         },
