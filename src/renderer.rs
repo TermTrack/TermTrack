@@ -96,12 +96,12 @@ impl Screen {
                     let ray_dir = Vec3 {
                         x: x as f64 + camera.pos.x,
                         y: y as f64 + camera.pos.y,
-                        z: 0.,
+                        z: camera.pos.z,
                     } - ray_origin;
                     let ray_o = Vec3 {
                         x: x as f64 + camera.pos.x,
                         y: y as f64 + camera.pos.y,
-                        z: 0.,
+                        z: camera.pos.z,
                     };
                     let (hit, distance) = tri.hit(ray_o, ray_dir);
                     if hit {

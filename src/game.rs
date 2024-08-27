@@ -49,6 +49,12 @@ impl Game {
                             KeyCode::Left => {
                                 self.camera.pos.x -= 1.;
                             }
+                            KeyCode::Up => {
+                                self.camera.pos.z += 1.;
+                            }
+                            KeyCode::Down => {
+                                self.camera.pos.z -= 1.;
+                            }
                             _ => (),
                         },
                     },
