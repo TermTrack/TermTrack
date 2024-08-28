@@ -13,7 +13,7 @@ fn main() {
         camera: camera::Camera {
             pos: Vec3 {
                 x: 0.,
-                y: -30.,
+                y: 0.,
                 z: 40.,
             },
             fov: 90.,
