@@ -4,6 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-term_size = { version = "1.0.0-beta1" }
-crossterm = "=0.28.1"
+crossterm = {version = "=0.28.1"}
 rayon = "1.10.0"

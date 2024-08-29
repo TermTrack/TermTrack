@@ -11,25 +11,32 @@ pub struct Game {
     pub camera: Camera,
 }
 
-const SPEED: f64 = 10.;
+const SPEED: f64 = 2.;
 
 impl Game {
     pub fn run(&mut self) {
         // load map files
         // generate map meshes
-        let frame_duration = Duration::from_millis(10);
-        let mut start = Instant::now();
 
         let mesh = load(loader::MAP);
+
+        // timer for fps
+        let mut time = Instant::now();
 
         loop {
             // get list off all vertices
 
-            if Instant::now() - start >= frame_duration {
-                self.renderer.render(&self.camera, &mesh);
-                start = Instant::now();
-            }
+            let fps = &format!(
+                "\r\nfps: {:.2?}",
+                1. / (time.elapsed().as_micros() as f64 / 1_000_000.)
+            );
+            time = Instant::now();
             // render vertices
+            self.renderer
+                .render(&self.camera, &mesh, &format!("{}", fps));
+
+            // reset timer
+
             // handle input
 
             if poll(Duration::from_millis(5)).unwrap() {

@@ -1,12 +1,8 @@
 use crate::{camera::Camera, mat::*};
 use crossterm;
 use rayon::prelude::*;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::thread;
-use term_size::dimensions;
 
-const RENDER_DIST: f64 = 300.;
+const RENDER_DIST: f64 = 100.;
 
 pub struct Screen {
     pub w: usize,
@@ -17,9 +13,9 @@ pub struct Screen {
 
 impl Screen {
     pub fn new() -> Self {
-        let (w, h) = dimensions().unwrap();
+        let (w, h) = crossterm::terminal::size().unwrap();
         let raw = crossterm::terminal::enable_raw_mode().unwrap();
-
+        let h = h - 2;
         // hide cursor
         print!("\x1b[?25l");
 
@@ -27,8 +23,8 @@ impl Screen {
         print!("\x1b[2J");
 
         Screen {
-            w,
-            h,
+            w: w.into(),
+            h: h.into(),
             buffer: vec![
                 vec![
                     Vec3 {
@@ -36,9 +32,9 @@ impl Screen {
                         y: 0.,
                         z: 0.
                     };
-                    w
+                    w.into()
                 ];
-                h
+                h.into()
             ],
             raw,
         }
@@ -56,14 +52,11 @@ impl Screen {
                     self.buffer[y][x].x as u8, self.buffer[y][x].y as u8, self.buffer[y][x].z as u8
                 )
             }
-            // Add newline if not on last line
-            if y != self.buffer.len() - 1 {
-                buffer += "\r\n";
-            }
         }
 
         //Move cursor home and print string buffer
         print!("\x1b[H{}", buffer);
+
         // clear buffer
         self.buffer = vec![
             vec![
@@ -78,11 +71,11 @@ impl Screen {
         ]
     }
 
-    pub fn render(&mut self, camera: &Camera, mesh: &Mesh) {
+    pub fn render(&mut self, camera: &Camera, mesh: &Mesh, extra: &str) {
         let tris = mesh.tris();
         let buffer = &mut self.buffer;
 
-        buffer.par_iter_mut().enumerate().for_each(|(y, row)| {
+        let now = buffer.par_iter_mut().enumerate().for_each(|(y, row)| {
             for (x, pixel) in row.iter_mut().enumerate() {
                 let mut min_dist = f64::MAX;
                 let mut color = Vec3 {
@@ -90,20 +83,16 @@ impl Screen {
                     y: 0.,
                     z: 0.,
                 };
+                let min_dim = self.w.min(self.h) as f64 / 2.;
+                let pixel_coords = Vec3 {
+                    x: (x as f64 - self.w as f64 / 2.) / min_dim,
+                    y: (y as f64 - self.h as f64 / 2.) / min_dim,
+                    z: camera.focus_length,
+                };
+                let pixel_coords = pixel_coords.rotate(camera.rotation);
+                let ray_dir = pixel_coords;
+                let ray_o = camera.pos + pixel_coords;
                 for tri in &tris {
-                    let pixel_coords = Vec3 {
-                        x: x as f64 - (self.w as f64) / 2.,
-                        y: y as f64 - (self.h as f64) / 2.,
-                        z: camera.focus_length,
-                    };
-                    let pixel_coords = pixel_coords.rotate(camera.rotation);
-                    let ray_dir = pixel_coords
-                        - Vec3 {
-                            x: 0.,
-                            y: 0.,
-                            z: 0.,
-                        };
-                    let ray_o = camera.pos + pixel_coords;
                     let (hit, distance) = tri.hit(ray_o, ray_dir);
                     if hit {
                         if distance < min_dist {
@@ -119,5 +108,13 @@ impl Screen {
         });
 
         self.flush();
+        self.print_info(camera, extra)
+    }
+
+    fn print_info(&self, camera: &Camera, extra: &str) {
+        print!(
+            "\x1b[48;1;0mposition: {:.2?}, rotation: {:.2?}, extra: {}",
+            camera.pos, camera.rotation, extra
+        )
     }
 }

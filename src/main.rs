@@ -12,15 +12,15 @@ fn main() {
         renderer: Screen::new(),
         camera: camera::Camera {
             pos: Vec3 {
-                x: 0.,
-                y: -5.,
-                z: 40.,
+                x: 9.,
+                y: 0.0,
+                z: 10.,
             },
-            focus_length: 50.,
+            focus_length: 6.,
             rotation: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
+                x: 1.75,
+                y: 0.0,
+                z: 0.0,
             },
         },
     };
