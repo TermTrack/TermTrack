@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use std::thread;
 use term_size::dimensions;
 
-const RENDER_DIST: f64 = 70.;
+const RENDER_DIST: f64 = 300.;
 
 pub struct Screen {
     pub w: usize,
@@ -45,19 +45,26 @@ impl Screen {
     }
 
     fn flush(&mut self) {
+        // Create new string buffer
         let mut buffer = String::new();
+        // Iterate through buffer
         for y in 0..self.buffer.len() {
             for x in 0..self.buffer[y].len() {
+                // Add ' ' withrightcolor to string buffer
                 buffer += &format!(
                     "\x1b[48;2;{};{};{}m ",
                     self.buffer[y][x].x as u8, self.buffer[y][x].y as u8, self.buffer[y][x].z as u8
                 )
             }
+            // Add newline if not on last line
             if y != self.buffer.len() - 1 {
                 buffer += "\r\n";
             }
         }
+
+        //Move cursor home and print string buffer
         print!("\x1b[H{}", buffer);
+        // clear buffer
         self.buffer = vec![
             vec![
                 Vec3 {
@@ -71,16 +78,7 @@ impl Screen {
         ]
     }
 
-    pub fn clear(&mut self) {
-        print!("\x1b[2J")
-    }
-
     pub fn render(&mut self, camera: &Camera, mesh: &Mesh) {
-        let ray_origin = Vec3 {
-            x: camera.pos.x + self.w as f64 / 2.,
-            y: camera.pos.y + self.h as f64 / 2.,
-            z: camera.pos.z - camera.fov,
-        };
         let tris = mesh.tris();
         let buffer = &mut self.buffer;
 
@@ -93,16 +91,19 @@ impl Screen {
                     z: 0.,
                 };
                 for tri in &tris {
-                    let ray_dir = Vec3 {
-                        x: x as f64 + camera.pos.x,
-                        y: y as f64 + camera.pos.y,
-                        z: camera.pos.z,
-                    } - ray_origin;
-                    let ray_o = Vec3 {
-                        x: x as f64 + camera.pos.x,
-                        y: y as f64 + camera.pos.y,
-                        z: camera.pos.z,
+                    let pixel_coords = Vec3 {
+                        x: x as f64 - (self.w as f64) / 2.,
+                        y: y as f64 - (self.h as f64) / 2.,
+                        z: camera.focus_length,
                     };
+                    let pixel_coords = pixel_coords.rotate(camera.rotation);
+                    let ray_dir = pixel_coords
+                        - Vec3 {
+                            x: 0.,
+                            y: 0.,
+                            z: 0.,
+                        };
+                    let ray_o = camera.pos + pixel_coords;
                     let (hit, distance) = tri.hit(ray_o, ray_dir);
                     if hit {
                         if distance < min_dist {

@@ -1,6 +1,6 @@
 use crate::mat::*;
 
-const GW: f64 = 30.;
+const GW: f64 = 50.;
 
 pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
 XS...........X...........X

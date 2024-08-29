@@ -11,6 +11,8 @@ pub struct Game {
     pub camera: Camera,
 }
 
+const SPEED: f64 = 10.;
+
 impl Game {
     pub fn run(&mut self) {
         // load map files
@@ -44,16 +46,52 @@ impl Game {
                                 panic!("Exited app")
                             }
                             KeyCode::Right => {
-                                self.camera.pos.x += 1.;
+                                self.camera.pos = self.camera.pos
+                                    + Vec3 {
+                                        x: SPEED,
+                                        y: 0.,
+                                        z: 0.,
+                                    }
+                                    .rotate_y(self.camera.rotation.x);
                             }
                             KeyCode::Left => {
-                                self.camera.pos.x -= 1.;
+                                self.camera.pos = self.camera.pos
+                                    - Vec3 {
+                                        x: SPEED,
+                                        y: 0.,
+                                        z: 0.,
+                                    }
+                                    .rotate_y(self.camera.rotation.x);
                             }
                             KeyCode::Up => {
-                                self.camera.pos.z += 1.;
+                                self.camera.pos = self.camera.pos
+                                    + Vec3 {
+                                        x: 0.,
+                                        y: 0.,
+                                        z: SPEED,
+                                    }
+                                    .rotate_y(self.camera.rotation.x);
                             }
                             KeyCode::Down => {
-                                self.camera.pos.z -= 1.;
+                                self.camera.pos = self.camera.pos
+                                    - Vec3 {
+                                        x: 0.,
+                                        y: 0.,
+                                        z: SPEED,
+                                    }
+                                    .rotate_y(self.camera.rotation.x);
+                            }
+                            KeyCode::Char('w') => {
+                                self.camera.rotation.y += 0.05;
+                            }
+                            KeyCode::Char('a') => {
+                                self.camera.rotation.x -= 0.05;
+                            }
+                            KeyCode::Char('s') => {
+                                self.camera.rotation.y -= 0.05;
+                            }
+                            KeyCode::Char('d') => {
+                                self.camera.rotation.x += 0.05;
                             }
                             _ => (),
                         },

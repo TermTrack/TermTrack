@@ -42,6 +42,28 @@ impl Vec3 {
     pub fn norm(self) -> Self {
         self / self.abs()
     }
+
+    pub fn rotate(self, rotation: Vec3) -> Vec3 {
+        let ret = self.rotate_z(rotation.z);
+        let ret = ret.rotate_x(rotation.y);
+        return ret.rotate_y(rotation.x);
+    }
+
+    pub fn rotate_x(self, angle: f64) -> Vec3 {
+        let y = self.y * angle.cos() - self.z * angle.sin();
+        let z = self.y * angle.sin() + self.z * angle.cos();
+        Vec3 { x: self.x, y, z }
+    }
+    pub fn rotate_y(self, angle: f64) -> Vec3 {
+        let x = self.x * angle.cos() + self.z * angle.sin();
+        let z = -self.x * angle.sin() + self.z * angle.cos();
+        Vec3 { x, y: self.y, z }
+    }
+    pub fn rotate_z(self, angle: f64) -> Vec3 {
+        let x = self.x * angle.cos() - self.y * angle.sin();
+        let y = self.x * angle.sin() + self.y * angle.cos();
+        Vec3 { x, y, z: self.z }
+    }
 }
 
 //

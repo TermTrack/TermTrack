@@ -13,10 +13,15 @@ fn main() {
         camera: camera::Camera {
             pos: Vec3 {
                 x: 0.,
-                y: -30.,
+                y: -5.,
                 z: 40.,
             },
-            fov: 90.,
+            focus_length: 50.,
+            rotation: Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            },
         },
     };
     game.run()
