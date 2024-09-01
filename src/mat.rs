@@ -77,7 +77,7 @@ impl Tri {
         a.cross(b).norm()
     }
 
-    pub fn hit(self, ro: Vec3, rd: Vec3) -> (bool, f64) {
+    pub fn hit_geo(self, ro: Vec3, rd: Vec3) -> (bool, f64) {
         let rd = rd.norm();
         let n = self.normal();
 
@@ -104,6 +104,33 @@ impl Tri {
             return (true, distance);
         }
         (false, 0.)
+    }
+
+    // möller trumbore algorithm: https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection.html
+    pub fn hit_mt(self, ro: Vec3, rd: Vec3) -> (bool, f64) {
+        let e1 = self.v1 - self.v0;
+        let e2 = self.v2 - self.v0;
+        let p = rd.cross(e2);
+        let det = p.dot(e1);
+        if det.abs() < 0.001 {
+            return (false, 0.);
+        }
+        let t = ro - self.v0;
+        let inv_det = 1. / det;
+        let u = t.dot(p) * inv_det;
+        if u < 0. || u > 1. {
+            return (false, 0.);
+        }
+        let q = t.cross(e1);
+        let v = rd.dot(q) * inv_det;
+        if v < 0. || v + u > 1. {
+            return (false, 0.);
+        }
+        let t = e2.dot(q) * inv_det;
+        if t < 0. {
+            return (false, 0.);
+        }
+        (true, t)
     }
 }
 

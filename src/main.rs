@@ -16,7 +16,7 @@ fn main() {
                 y: 0.0,
                 z: 10.,
             },
-            focus_length: 6.,
+            focus_length: 2.,
             rotation: Vec3 {
                 x: 1.75,
                 y: 0.0,

@@ -33,7 +33,7 @@ impl Game {
             time = Instant::now();
             // render vertices
             self.renderer
-                .render(&self.camera, &mesh, &format!("{}", fps));
+                .render_mt(&self.camera, &mesh, &format!("{}", fps), true);
 
             // reset timer
 
