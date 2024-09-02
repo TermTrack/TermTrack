@@ -1,14 +1,14 @@
 use crate::mat::*;
 
-const GW: f64 = 10.;
+const GW: f64 = 15.;
 
 pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
-XS...........X...........X
-X............X...........X
-XXXXXX.......X...........X
-X............X...........X
-XXXX       XXX...........X
+XS.......X...............X
 X........................X
+XXXXXX.........X...X.....X
+X....XXXXX...............X
+X....X...X...............X
+X....X...X....XXXXXXX....X
 X........................X
 X.......................EX
 XXXXXXXXXXXXXXXXXXXXXXXXXX";

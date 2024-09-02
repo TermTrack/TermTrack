@@ -83,13 +83,13 @@ impl Tri {
 
         let d = -n.dot(self.v0);
         if n.dot(rd) == 0. {
-            return (false, 0.);
+            return (false, f64::INFINITY);
         }
 
         let distance = -(n.dot(ro) + d) / n.dot(rd);
 
         if distance < 0. {
-            return (false, 0.);
+            return (false, f64::INFINITY);
         }
         let p = ro + rd * distance;
 
@@ -103,7 +103,7 @@ impl Tri {
         if n.dot(e0.cross(c0)) > 0. && n.dot(e1.cross(c1)) > 0. && n.dot(e2.cross(c2)) > 0. {
             return (true, distance);
         }
-        (false, 0.)
+        (false, f64::INFINITY)
     }
 
     // möller trumbore algorithm: https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection.html
@@ -119,16 +119,16 @@ impl Tri {
         let inv_det = 1. / det;
         let u = t.dot(p) * inv_det;
         if u < 0. || u > 1. {
-            return (false, 0.);
+            return (false, f64::INFINITY);
         }
         let q = t.cross(e1);
         let v = rd.dot(q) * inv_det;
         if v < 0. || v + u > 1. {
-            return (false, 0.);
+            return (false, f64::INFINITY);
         }
         let t = e2.dot(q) * inv_det;
         if t < 0. {
-            return (false, 0.);
+            return (false, f64::INFINITY);
         }
         (true, t)
     }
