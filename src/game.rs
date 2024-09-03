@@ -20,7 +20,7 @@ impl Game {
         // load map files
         // generate map meshes
 
-        let mesh = load(loader::MAP);
+        let mesh = load(loader::MAP).0;
 
         // timer for fps
         let mut time = Instant::now();

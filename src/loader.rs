@@ -151,9 +151,10 @@ const END: [(f64, f64, f64); 8] = [
     (255., 0., 0.),
 ];
 
-pub fn load(map: &str) -> Mesh {
+pub fn load(map: &str) -> (Mesh, (f64, f64)) {
     let rows: Vec<&str> = map.split("\n").collect();
     let mut mesh = Mesh::new([].into());
+    let mut start = (0., 0.);
 
     for (z, row) in rows.iter().enumerate() {
         for (x, ch) in row.chars().enumerate() {
@@ -201,7 +202,10 @@ pub fn load(map: &str) -> Mesh {
                     }
                 }
 
-                'S' => grid = Mesh::new(Vec::from(START)),
+                'S' => {
+                    start = (z as f64 * GW + GW / 2., x as f64 * GW + GW / 2.);
+                    grid = Mesh::new(Vec::from(START))
+                }
 
                 'E' => grid = Mesh::new(Vec::from(END)),
 
@@ -233,7 +237,7 @@ pub fn load(map: &str) -> Mesh {
             mesh = mesh + grid;
         }
     }
-    mesh
+    (mesh, start)
 }
 
 #[cfg(test)]

@@ -1,3 +1,4 @@
+use loader::*;
 use mat::Vec3;
 use renderer::Screen;
 
@@ -12,9 +13,9 @@ fn main() {
         renderer: Screen::new(),
         camera: camera::Camera {
             pos: Vec3 {
-                x: 9.,
+                x: load(loader::MAP).1 .1,
                 y: -0.5,
-                z: 10.,
+                z: load(loader::MAP).1 .0,
             },
             focus_length: 2.,
             rotation: Vec3 {
