@@ -1,16 +1,27 @@
 use crate::mat::*;
+use crate::renderer::RENDER_DIST;
 
 const GW: f64 = 15.;
 
+// pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
+// XS.......X...............X
+// X........................X
+// XXXXXX.........X...X.....X
+// X....XXXXX...............X
+// X....X...X...............X
+// X....X...X....XXXXXXX....X
+// X........................X
+// X.......................EX
+// XXXXXXXXXXXXXXXXXXXXXXXXXX";
+
 pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
-XS.......X...............X
-X........................X
-XXXXXX.........X...X.....X
-X....XXXXX...............X
-X....X...X...............X
-X....X...X....XXXXXXX....X
-X........................X
-X.......................EX
+X                        X
+X S . . ..  . ..         X
+X        .     .         X
+X                        X
+X        . . .. ..       X
+X                . E     X
+X                        X
 XXXXXXXXXXXXXXXXXXXXXXXXXX";
 
 const WALL: [[(f64, f64, f64); 8]; 4] = [
@@ -71,6 +82,53 @@ const FLOOR: [(f64, f64, f64); 8] = [
     (102., 245., 66.),
 ];
 
+const HOLE: [[(f64, f64, f64); 8]; 4] = [
+    // front face
+    [
+        (0., GW, 0.),
+        (GW, GW, 0.),
+        (GW, RENDER_DIST * 3., 0.),
+        (235., 52., 189.),
+        (0., GW, 0.),
+        (GW, RENDER_DIST * 3., 0.),
+        (0., RENDER_DIST * 3., 0.),
+        (235., 52., 189.),
+    ],
+    // back face
+    [
+        (0., GW, GW),
+        (GW, GW, GW),
+        (GW, RENDER_DIST * 3., GW),
+        (235., 52., 189.),
+        (0., GW, GW),
+        (GW, RENDER_DIST * 3., GW),
+        (0., RENDER_DIST * 3., GW),
+        (235., 52., 189.),
+    ],
+    //left face
+    [
+        (0., GW, 0.),
+        (0., GW, GW),
+        (0., RENDER_DIST * 3., 0.),
+        (235., 52., 189.),
+        (0., RENDER_DIST * 3., 0.),
+        (0., RENDER_DIST * 3., GW),
+        (0., GW, GW),
+        (235., 52., 189.),
+    ],
+    // right face
+    [
+        (GW, GW, 0.),
+        (GW, GW, GW),
+        (GW, RENDER_DIST * 3., 0.),
+        (235., 52., 189.),
+        (GW, RENDER_DIST * 3., 0.),
+        (GW, RENDER_DIST * 3., GW),
+        (GW, GW, GW),
+        (235., 52., 189.),
+    ],
+];
+
 pub fn load(map: &str) -> Mesh {
     let rows: Vec<&str> = map.split("\n").collect();
     let mut mesh = Mesh::new([].into());
@@ -98,8 +156,29 @@ pub fn load(map: &str) -> Mesh {
                         grid = grid + Mesh::new(Vec::from(WALL[3]));
                     }
                 }
+
                 '.' => grid = Mesh::new(Vec::from(FLOOR)),
-                ' ' => (),
+
+                ' ' => {
+                    // Adding the visible face
+                    if z != 0 && rows[z - 1].chars().nth(x).unwrap() != ' ' {
+                        // add upper wall
+                        grid = grid + Mesh::new(Vec::from(HOLE[0]));
+                    }
+                    if z != rows.len() - 1 && rows[z + 1].chars().nth(x).unwrap() != ' ' {
+                        // add bottom wall
+                        grid = grid + Mesh::new(Vec::from(HOLE[1]));
+                    }
+                    if x != 0 && rows[z].chars().nth(x - 1).unwrap() != ' ' {
+                        // add left wall
+                        grid = grid + Mesh::new(Vec::from(HOLE[2]));
+                    }
+                    if x != row.len() - 1 && rows[z].chars().nth(x + 1).unwrap() != ' ' {
+                        // add right wall
+                        grid = grid + Mesh::new(Vec::from(HOLE[3]));
+                    }
+                }
+
                 'S' => (),
                 'E' => (),
                 _ => panic!("bad map"),

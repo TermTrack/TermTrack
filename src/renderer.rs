@@ -4,7 +4,7 @@ use crate::{camera::Camera, mat::*};
 use crossterm;
 use rayon::prelude::*;
 
-const RENDER_DIST: f64 = 45.;
+pub const RENDER_DIST: f64 = 45.;
 
 pub struct Screen {
     pub w: usize,
