@@ -129,6 +129,28 @@ const HOLE: [[(f64, f64, f64); 8]; 4] = [
     ],
 ];
 
+const START: [(f64, f64, f64); 8] = [
+    (0., GW, 0.),
+    (0., GW, GW),
+    (GW, GW, 0.),
+    (122., 173., 255.),
+    (GW, GW, 0.),
+    (0., GW, GW),
+    (GW, GW, GW),
+    (122., 173., 255.),
+];
+
+const END: [(f64, f64, f64); 8] = [
+    (0., GW, 0.),
+    (0., GW, GW),
+    (GW, GW, 0.),
+    (255., 0., 0.),
+    (GW, GW, 0.),
+    (0., GW, GW),
+    (GW, GW, GW),
+    (255., 0., 0.),
+];
+
 pub fn load(map: &str) -> Mesh {
     let rows: Vec<&str> = map.split("\n").collect();
     let mut mesh = Mesh::new([].into());
@@ -179,8 +201,10 @@ pub fn load(map: &str) -> Mesh {
                     }
                 }
 
-                'S' => (),
-                'E' => (),
+                'S' => grid = Mesh::new(Vec::from(START)),
+
+                'E' => grid = Mesh::new(Vec::from(END)),
+
                 _ => panic!("bad map"),
             }
 

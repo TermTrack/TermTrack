@@ -57,10 +57,14 @@ impl Game {
                 self.camera.rotation.x += 0.05;
             }
             if keys.contains(&Keycode::Up) {
-                self.camera.rotation.y += 0.05;
+                if self.camera.rotation.y < 1.5 {
+                    self.camera.rotation.y += 0.05;
+                }
             }
             if keys.contains(&Keycode::Down) {
-                self.camera.rotation.y -= 0.05;
+                if self.camera.rotation.y > -1.5 {
+                    self.camera.rotation.y -= 0.05;
+                }
             }
             if keys.contains(&Keycode::W) {
                 self.camera.pos = self.camera.pos
