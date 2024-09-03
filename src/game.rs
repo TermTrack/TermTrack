@@ -14,6 +14,7 @@ pub struct Game {
 }
 
 const SPEED: f64 = 2.;
+const GRAVITY: f64 = 50.;
 
 impl Game {
     pub fn run(&mut self) {
@@ -28,7 +29,23 @@ impl Game {
         // device for input
         let device_state = DeviceState::new();
 
+        let mut v = 0.;
+
         loop {
+            // // gravity
+            if self.camera.pos.y < -0.5 {
+                self.camera.pos = self.camera.pos
+                    + Vec3 {
+                        x: 0.,
+                        y: v * time.elapsed().as_secs_f64()
+                            + (GRAVITY * time.elapsed().as_secs_f64().powi(2)) / 2.,
+                        z: 0.,
+                    };
+                v += GRAVITY * time.elapsed().as_secs_f64();
+            } else {
+                v = 0.;
+            }
+
             // get list off all vertices
 
             let fps = &format!(
