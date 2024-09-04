@@ -14,7 +14,7 @@ fn main() {
         camera: camera::Camera {
             pos: Vec3 {
                 x: load(loader::MAP).1 .1,
-                y: -10.,
+                y: -20.,
                 z: load(loader::MAP).1 .0,
             },
             focus_length: 2.,

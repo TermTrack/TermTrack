@@ -14,7 +14,7 @@ pub struct Game {
 }
 
 const SPEED: f64 = 2.;
-const GRAVITY: f64 = 50.;
+const GRAVITY: f64 = 80.;
 
 impl Game {
     pub fn run(&mut self) {
@@ -29,22 +29,28 @@ impl Game {
         // device for input
         let device_state = DeviceState::new();
 
-        let mut v = 0.;
+        // velocity vector
+        let mut v = Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 0.,
+        };
 
         loop {
-            // // gravity
-            if self.camera.pos.y < -0.5 {
-                self.camera.pos = self.camera.pos
-                    + Vec3 {
-                        x: 0.,
-                        y: v * time.elapsed().as_secs_f64()
-                            + (GRAVITY * time.elapsed().as_secs_f64().powi(2)) / 2.,
-                        z: 0.,
-                    };
-                v += GRAVITY * time.elapsed().as_secs_f64();
-            } else {
-                v = 0.;
-            }
+            // gravity
+            // if self.camera.pos.y < -0.5 {
+            //     // change this statement to depend on collision instead
+            //     self.camera.pos = self.camera.pos
+            //         + Vec3 {
+            //             x: 0.,
+            //             y: v.y * time.elapsed().as_secs_f64()
+            //                 + (GRAVITY * time.elapsed().as_secs_f64().powi(2)) / 2.,
+            //             z: 0.,
+            //         };
+            //     v.y += GRAVITY * time.elapsed().as_secs_f64();
+            // } else {
+            //     v.y = 0.;
+            // }
 
             // get list off all vertices
 
@@ -52,12 +58,13 @@ impl Game {
                 "\r\nfps: {:.2?}",
                 1. / (time.elapsed().as_micros() as f64 / 1_000_000.)
             );
+
+            // reset timer
             time = Instant::now();
+
             // render vertices
             self.renderer
                 .render_mt(&self.camera, &mesh, &format!("{}", fps), true);
-
-            // reset timer
 
             // handle input
             let mouse = device_state.get_mouse();
@@ -118,6 +125,37 @@ impl Game {
                         z: -SPEED,
                     }
                     .rotate_y(self.camera.rotation.x);
+            }
+            // if keys.contains(&Keycode::Space) {
+            //     v = v + Vec3 {
+            //         x: 0.,
+            //         y: -20.,
+            //         z: 0.,
+            //     }
+            // }
+
+            // jump, gravity & collision
+
+            // replace with collision statement
+            if self.camera.pos.y > -0.5 {
+                v.y = 0.;
+                if keys.contains(&Keycode::Space) {
+                    self.camera.pos.y = -0.6;
+                    v = v + Vec3 {
+                        x: 0.,
+                        y: -40.,
+                        z: 0.,
+                    }
+                }
+            } else {
+                self.camera.pos = self.camera.pos
+                    + Vec3 {
+                        x: 0.,
+                        y: v.y * time.elapsed().as_secs_f64()
+                            + (GRAVITY * time.elapsed().as_secs_f64().powi(2)) / 2.,
+                        z: 0.,
+                    };
+                v.y += GRAVITY * time.elapsed().as_secs_f64();
             }
 
             // if poll(Duration::from_millis(5)).unwrap() {
