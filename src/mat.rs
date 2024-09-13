@@ -174,6 +174,18 @@ impl Mesh {
         self.tris.clone()
     }
 
+    pub fn gpu_buffer_data(&self) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
+        let mut verts = vec![];
+        let mut colors = vec![];
+        for tri in self.tris() {
+            verts.push([tri.v0.x, tri.v0.y, tri.v0.z]);
+            verts.push([tri.v1.x, tri.v1.y, tri.v1.z]);
+            verts.push([tri.v2.x, tri.v2.y, tri.v2.z]);
+            colors.push([tri.color.x, tri.color.y, tri.color.z]);
+        }
+        return (verts, colors);
+    }
+
     pub fn mut_tris(&mut self) -> &mut Vec<Tri> {
         return &mut self.tris;
     }

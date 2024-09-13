@@ -1,7 +1,7 @@
 use crate::mat::*;
 use crate::renderer::RENDER_DIST;
 
-const GW: f64 = 15.;
+pub const GW: f64 = 20.;
 
 // pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
 // XS.......X...............X
@@ -14,14 +14,36 @@ const GW: f64 = 15.;
 // X.......................EX
 // XXXXXXXXXXXXXXXXXXXXXXXXXX";
 
+// pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
+// X                        X
+// X S . . ..  . ..         X
+// X        .     .         X
+// X                        X
+// X        . . .. ..       X
+// X                . E     X
+// X                        X
+// XXXXXXXXXXXXXXXXXXXXXXXXXX";
+
 pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
+XS.......X...............X
+X........................X
+XXXXXX.........X   X.....X
+X....XXXXX...............X
+X....X...X...............X
+X....X...X....XXXXXXX....X
+X.....................XXXX
+X.......................UX
+XXXXXXXXXXXXXXXXXXXXXXXXXX
+sep
+XXXXXXXXXXXXXXXXXXXXXXXXXX
+X          .            EX
 X                        X
-X S . . ..  . ..         X
-X        .     .         X
-X                        X
-X        . . .. ..       X
-X                . E     X
-X                        X
+X.......XX     .   .     X
+X    ....X    XXXXXXX    X
+X    .   X               X
+X    .   .    .......    X
+X                     ...X
+X                       DX
 XXXXXXXXXXXXXXXXXXXXXXXXXX";
 
 const WALL: [[(f64, f64, f64); 8]; 4] = [
@@ -71,17 +93,6 @@ const WALL: [[(f64, f64, f64); 8]; 4] = [
     ],
 ];
 
-const FLOOR: [(f64, f64, f64); 8] = [
-    (0., GW, 0.),
-    (0., GW, GW),
-    (GW, GW, 0.),
-    (102., 245., 66.),
-    (GW, GW, 0.),
-    (0., GW, GW),
-    (GW, GW, GW),
-    (102., 245., 66.),
-];
-
 const HOLE: [[(f64, f64, f64); 8]; 4] = [
     // front face
     [
@@ -129,112 +140,336 @@ const HOLE: [[(f64, f64, f64); 8]; 4] = [
     ],
 ];
 
-const START: [(f64, f64, f64); 8] = [
+const START: [(f64, f64, f64); 8 * 6] = [
+    (0., GW * 0.9, 0.),
+    (0., GW * 0.9, GW),
+    (GW, GW * 0.9, 0.),
+    (122., 173., 255.),
+    (GW, GW * 0.9, 0.),
+    (0., GW * 0.9, GW),
+    (GW, GW * 0.9, GW),
+    (122., 173., 255.),
     (0., GW, 0.),
     (0., GW, GW),
     (GW, GW, 0.),
-    (122., 173., 255.),
+    (102., 245., 66.),
     (GW, GW, 0.),
     (0., GW, GW),
     (GW, GW, GW),
-    (122., 173., 255.),
+    (102., 245., 66.),
+    (0., GW, 0.),
+    (0., GW, GW),
+    (0., GW * 0.9, 0.),
+    (235., 52., 189.),
+    (0., GW * 0.9, 0.),
+    (0., GW * 0.9, GW),
+    (0., GW, GW),
+    (235., 52., 189.),
+    (GW, GW, 0.),
+    (GW, GW, GW),
+    (GW, GW * 0.9, 0.),
+    (235., 52., 189.),
+    (GW, GW * 0.9, 0.),
+    (GW, GW * 0.9, GW),
+    (GW, GW, GW),
+    (235., 52., 189.),
+    (0., GW, 0.),
+    (GW, GW, 0.),
+    (GW, GW * 0.9, 0.),
+    (235., 52., 189.),
+    (0., GW, 0.),
+    (0., GW * 0.9, 0.),
+    (GW, GW * 0.9, 0.),
+    (235., 52., 189.),
+    (0., GW, GW),
+    (GW, GW, GW),
+    (GW, GW * 0.9, GW),
+    (235., 52., 189.),
+    (0., GW, GW),
+    (0., GW * 0.9, GW),
+    (GW, GW * 0.9, GW),
+    (235., 52., 189.),
+];
+const FLOOR: [[(f64, f64, f64); 8]; 6] = [
+    // top face
+    [
+        (0., GW * 0.9, 0.),
+        (0., GW * 0.9, GW),
+        (GW, GW * 0.9, 0.),
+        (102., 245., 66.),
+        (GW, GW * 0.9, 0.),
+        (0., GW * 0.9, GW),
+        (GW, GW * 0.9, GW),
+        (102., 245., 66.),
+    ],
+    //bottom face
+    [
+        (0., GW, 0.),
+        (0., GW, GW),
+        (GW, GW, 0.),
+        (102., 245., 66.),
+        (GW, GW, 0.),
+        (0., GW, GW),
+        (GW, GW, GW),
+        (102., 245., 66.),
+    ],
+    // side faces
+    [
+        (0., GW, 0.),
+        (0., GW, GW),
+        (0., GW * 0.9, 0.),
+        (235., 52., 189.),
+        (0., GW * 0.9, 0.),
+        (0., GW * 0.9, GW),
+        (0., GW, GW),
+        (235., 52., 189.),
+    ],
+    [
+        (GW, GW, 0.),
+        (GW, GW, GW),
+        (GW, GW * 0.9, 0.),
+        (235., 52., 189.),
+        (GW, GW * 0.9, 0.),
+        (GW, GW * 0.9, GW),
+        (GW, GW, GW),
+        (235., 52., 189.),
+    ],
+    [
+        (0., GW, 0.),
+        (GW, GW, 0.),
+        (GW, GW * 0.9, 0.),
+        (235., 52., 189.),
+        (0., GW, 0.),
+        (0., GW * 0.9, 0.),
+        (GW, GW * 0.9, 0.),
+        (235., 52., 189.),
+    ],
+    [
+        (0., GW, GW),
+        (GW, GW, GW),
+        (GW, GW * 0.9, GW),
+        (235., 52., 189.),
+        (0., GW, GW),
+        (0., GW * 0.9, GW),
+        (GW, GW * 0.9, GW),
+        (235., 52., 189.),
+    ],
 ];
 
-const END: [(f64, f64, f64); 8] = [
+const END: [(f64, f64, f64); 8 * 6] = [
+    (0., GW * 0.9, 0.),
+    (0., GW * 0.9, GW),
+    (GW, GW * 0.9, 0.),
+    (255., 0., 0.),
+    (GW, GW * 0.9, 0.),
+    (0., GW * 0.9, GW),
+    (GW, GW * 0.9, GW),
+    (255., 0., 0.),
     (0., GW, 0.),
     (0., GW, GW),
     (GW, GW, 0.),
-    (255., 0., 0.),
+    (102., 245., 66.),
     (GW, GW, 0.),
     (0., GW, GW),
     (GW, GW, GW),
-    (255., 0., 0.),
+    (102., 245., 66.),
+    (0., GW, 0.),
+    (0., GW, GW),
+    (0., GW * 0.9, 0.),
+    (235., 52., 189.),
+    (0., GW * 0.9, 0.),
+    (0., GW * 0.9, GW),
+    (0., GW, GW),
+    (235., 52., 189.),
+    (GW, GW, 0.),
+    (GW, GW, GW),
+    (GW, GW * 0.9, 0.),
+    (235., 52., 189.),
+    (GW, GW * 0.9, 0.),
+    (GW, GW * 0.9, GW),
+    (GW, GW, GW),
+    (235., 52., 189.),
+    (0., GW, 0.),
+    (GW, GW, 0.),
+    (GW, GW * 0.9, 0.),
+    (235., 52., 189.),
+    (0., GW, 0.),
+    (0., GW * 0.9, 0.),
+    (GW, GW * 0.9, 0.),
+    (235., 52., 189.),
+    (0., GW, GW),
+    (GW, GW, GW),
+    (GW, GW * 0.9, GW),
+    (235., 52., 189.),
+    (0., GW, GW),
+    (0., GW * 0.9, GW),
+    (GW, GW * 0.9, GW),
+    (235., 52., 189.),
 ];
+
+fn separate_map(map: &str) -> Vec<&str> {
+    map.split("sep\n").collect()
+}
 
 pub fn load(map: &str) -> (Mesh, (f64, f64)) {
-    let rows: Vec<&str> = map.split("\n").collect();
     let mut mesh = Mesh::new([].into());
     let mut start = (0., 0.);
-
-    for (z, row) in rows.iter().enumerate() {
-        for (x, ch) in row.chars().enumerate() {
-            let mut grid = Mesh::new(vec![]);
-            match ch {
-                'X' => {
-                    // Adding the visible face
-                    if z != 0 && rows[z - 1].chars().nth(x).unwrap() != 'X' {
-                        // add upper wall
-                        grid = grid + Mesh::new(Vec::from(WALL[0]));
-                    }
-                    if z != rows.len() - 1 && rows[z + 1].chars().nth(x).unwrap() != 'X' {
-                        // add bottom wall
-                        grid = grid + Mesh::new(Vec::from(WALL[1]));
-                    }
-                    if x != 0 && rows[z].chars().nth(x - 1).unwrap() != 'X' {
-                        // add left wall
-                        grid = grid + Mesh::new(Vec::from(WALL[2]));
-                    }
-                    if x != row.len() - 1 && rows[z].chars().nth(x + 1).unwrap() != 'X' {
-                        // add right wall
-                        grid = grid + Mesh::new(Vec::from(WALL[3]));
-                    }
-                }
-
-                '.' => grid = Mesh::new(Vec::from(FLOOR)),
-
-                ' ' => {
-                    // Adding the visible face
-                    if z != 0 && rows[z - 1].chars().nth(x).unwrap() != ' ' {
-                        // add upper wall
-                        grid = grid + Mesh::new(Vec::from(HOLE[0]));
-                    }
-                    if z != rows.len() - 1 && rows[z + 1].chars().nth(x).unwrap() != ' ' {
-                        // add bottom wall
-                        grid = grid + Mesh::new(Vec::from(HOLE[1]));
-                    }
-                    if x != 0 && rows[z].chars().nth(x - 1).unwrap() != ' ' {
-                        // add left wall
-                        grid = grid + Mesh::new(Vec::from(HOLE[2]));
-                    }
-                    if x != row.len() - 1 && rows[z].chars().nth(x + 1).unwrap() != ' ' {
-                        // add right wall
-                        grid = grid + Mesh::new(Vec::from(HOLE[3]));
-                    }
-                }
-
-                'S' => {
-                    start = (z as f64 * GW + GW / 2., x as f64 * GW + GW / 2.);
-                    grid = Mesh::new(Vec::from(START))
-                }
-
-                'E' => grid = Mesh::new(Vec::from(END)),
-
-                _ => panic!("bad map"),
+    for (level, map) in separate_map(map).iter().enumerate() {
+        let rows: Vec<&str> = map.split("\n").collect();
+        for (z, row) in rows.iter().enumerate() {
+            if row.is_empty() {
+                continue;
             }
+            for (x, ch) in row.chars().enumerate() {
+                let mut grid = Mesh::new(vec![]);
+                match ch {
+                    'X' => {
+                        // Adding the visible face
+                        if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
+                            // add upper wall
+                            grid = grid + Mesh::new(Vec::from(WALL[0]));
+                        }
+                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
+                            // add bottom wall
+                            grid = grid + Mesh::new(Vec::from(WALL[1]));
+                        }
+                        if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
+                            // add left wall
+                            grid = grid + Mesh::new(Vec::from(WALL[2]));
+                        }
+                        if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
+                            // add right wall
+                            grid = grid + Mesh::new(Vec::from(WALL[3]));
+                        }
+                    }
 
-            // Translating grid to position
-            for tri in grid.mut_tris() {
-                tri.v0 = tri.v0
-                    + Vec3 {
-                        x: (x as f64) * GW,
-                        z: (z as f64) * GW,
-                        y: 0.,
-                    };
-                tri.v1 = tri.v1
-                    + Vec3 {
-                        x: (x as f64) * GW,
-                        z: (z as f64) * GW,
-                        y: 0.,
-                    };
-                tri.v2 = tri.v2
-                    + Vec3 {
-                        x: (x as f64) * GW,
-                        z: (z as f64) * GW,
-                        y: 0.,
-                    };
+                    '.' => {
+                        // add floor
+                        grid = grid + Mesh::new(Vec::from(FLOOR[0]));
+                        if level != 0 {
+                            // add lower section (roof)
+                            grid = grid + Mesh::new(Vec::from(FLOOR[1]));
+                            if x != 0 && row.chars().nth(x - 1) != Some('.') {
+                                // add left floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[2]));
+                            }
+                            if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
+                                // add right floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[3]));
+                            }
+                            if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
+                                // add front floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[4]));
+                            }
+                            if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
+                                // add back floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[5]));
+                            }
+                        }
+                    }
+
+                    ' ' => {
+                        if level != 0 {
+                            continue;
+                        }
+                        // Adding the visible face
+                        if z != 0 && rows[z - 1].chars().nth(x) != Some(' ') {
+                            // add upper wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[0]));
+                        }
+                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some(' ') {
+                            // add bottom wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[1]));
+                        }
+                        if x != 0 && rows[z].chars().nth(x - 1) != Some(' ') {
+                            // add left wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[2]));
+                        }
+                        if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some(' ') {
+                            // add right wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[3]));
+                        }
+                    }
+
+                    'S' => {
+                        start = (z as f64 * GW + GW / 2., x as f64 * GW + GW / 2.);
+                        grid = Mesh::new(Vec::from(START))
+                    }
+
+                    'E' => grid = Mesh::new(Vec::from(END)),
+
+                    'U' => {
+                        // add floor
+                        grid = grid + Mesh::new(Vec::from(FLOOR[0]));
+                        if level != 0 {
+                            // add lower section (roof)
+                            grid = grid + Mesh::new(Vec::from(FLOOR[1]));
+                            if x != 0 && row.chars().nth(x - 1) != Some('.') {
+                                // add left floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[2]));
+                            }
+                            if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
+                                // add right floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[3]));
+                            }
+                            if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
+                                // add front floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[4]));
+                            }
+                            if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
+                                // add back floor wall
+                                grid = grid + Mesh::new(Vec::from(FLOOR[5]));
+                            }
+                        }
+                    }
+
+                    'D' => {
+                        // Adding the visible face
+                        if z != 0 && rows[z - 1].chars().nth(x).unwrap() != ' ' {
+                            // add upper wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[0]));
+                        }
+                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x).unwrap() != ' ' {
+                            // add bottom wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[1]));
+                        }
+                        if x != 0 && rows[z].chars().nth(x - 1).unwrap() != ' ' {
+                            // add left wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[2]));
+                        }
+                        if x != row.len() - 1 && rows[z].chars().nth(x + 1).unwrap() != ' ' {
+                            // add right wall
+                            grid = grid + Mesh::new(Vec::from(HOLE[3]));
+                        }
+                    }
+
+                    _ => panic!("bad map"),
+                }
+
+                // Translating grid to position
+                for tri in grid.mut_tris() {
+                    tri.v0 = tri.v0
+                        + Vec3 {
+                            x: (x as f64) * GW,
+                            z: (z as f64) * GW,
+                            y: -(level as f64) * GW,
+                        };
+                    tri.v1 = tri.v1
+                        + Vec3 {
+                            x: (x as f64) * GW,
+                            z: (z as f64) * GW,
+                            y: -(level as f64) * GW,
+                        };
+                    tri.v2 = tri.v2
+                        + Vec3 {
+                            x: (x as f64) * GW,
+                            z: (z as f64) * GW,
+                            y: -(level as f64) * GW,
+                        };
+                }
+
+                mesh = mesh + grid;
             }
-
-            mesh = mesh + grid;
         }
     }
     (mesh, start)
