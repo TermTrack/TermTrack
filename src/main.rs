@@ -17,11 +17,16 @@ fn main() {
                 y: -20.,
                 z: load(loader::MAP).1 .0,
             },
-            focus_length: 2.,
+            focus_length: 2., //2
             rotation: Vec3 {
                 x: 1.75,
                 y: 0.0,
                 z: 0.0,
+            },
+            vel: Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
             },
         },
     };

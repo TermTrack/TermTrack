@@ -1,7 +1,8 @@
 use crate::{camera::Camera, mat::*};
 use crossterm;
 use rayon::prelude::*;
-pub const RENDER_DIST: f64 = 45.;
+
+pub const RENDER_DIST: f64 = 50.;
 
 pub struct Screen {
     pub w: usize,
@@ -274,6 +275,11 @@ mod tests {
                 z: 0.,
             },
             focus_length: 0.5,
+            vel: Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            },
         };
         let e = "tom";
 
@@ -354,6 +360,11 @@ mod tests {
                 z: 0.,
             },
             focus_length: 0.5,
+            vel: Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            },
         };
         let e = "tom";
         let m = Mesh::new(vec![
@@ -432,6 +443,11 @@ mod tests {
                 z: 0.,
             },
             focus_length: 0.5,
+            vel: Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            },
         };
         let e = "tom";
         let m = Mesh::new(vec![

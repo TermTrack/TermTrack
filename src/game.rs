@@ -1,11 +1,9 @@
-use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
-use device_query::{device_state, DeviceQuery, DeviceState, Keycode, MouseState};
+use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 
 use crate::loader::{self, load};
 use crate::renderer::*;
 use crate::{camera::Camera, mat::*};
 use core::panic;
-use std::any::Any;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -31,35 +29,19 @@ impl Game {
         // device for input
         let device_state = DeviceState::new();
 
-        // velocity vector
-        let mut v = Vec3 {
-            x: 0.,
-            y: 0.,
-            z: 0.,
-        };
-
-        let mut pause = false;
-        let mut show_map = false;
-
         loop {
-            // gravity
-            // if self.camera.pos.y < -0.5 {
-            //     // change this statement to depend on collision instead
-            //     self.camera.pos = self.camera.pos
-            //         + Vec3 {
-            //             x: 0.,
-            //             y: v.y * time.elapsed().as_secs_f64()
-            //                 + (GRAVITY * time.elapsed().as_secs_f64().powi(2)) / 2.,
-            //             z: 0.,
-            //         };
-            //     v.y += GRAVITY * time.elapsed().as_secs_f64();
-            // } else {
-            //     v.y = 0.;
-            // }
+            // reset timer
+            let dt = time.elapsed().as_secs_f64();
+            time = Instant::now();
 
             // get list off all vertices
 
-            let dt = time.elapsed().as_secs_f64();
+            let fps = &format!("\r\nfps: {:.2?}", 1. / (dt));
+
+            // render vertices
+            self.renderer
+                .render_mt(&self.camera, &mesh, &format!("{} dt: {}", fps, dt), true);
+
             // handle input
             let mouse = device_state.get_mouse();
             let keys = device_state.get_keys();
@@ -103,98 +85,95 @@ impl Game {
                     self.camera.rotation.y -= ROTATION_SPEED * dt;
                 }
             }
+
+            let mut v = Vec3 {
+                x: 0.,
+                y: self.camera.vel.y,
+                z: 0.,
+            };
+
             if keys.contains(&Keycode::W) {
-                self.camera.pos = self.camera.pos
-                    + Vec3 {
-                        x: 0.,
-                        y: 0.,
-                        z: SPEED * dt,
-                    }
-                    .rotate_y(self.camera.rotation.x);
+                v = v + Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: SPEED,
+                }
+                .rotate_y(self.camera.rotation.x);
             }
             if keys.contains(&Keycode::A) {
-                self.camera.pos = self.camera.pos
-                    + Vec3 {
-                        x: -SPEED * dt,
-                        y: 0.,
-                        z: 0.,
-                    }
-                    .rotate_y(self.camera.rotation.x);
+                v = v + Vec3 {
+                    x: -SPEED,
+                    y: 0.,
+                    z: 0.,
+                }
+                .rotate_y(self.camera.rotation.x);
             }
             if keys.contains(&Keycode::D) {
-                self.camera.pos = self.camera.pos
-                    + Vec3 {
-                        x: SPEED * dt,
-                        y: 0.,
-                        z: 0.,
-                    }
-                    .rotate_y(self.camera.rotation.x);
+                v = v + Vec3 {
+                    x: SPEED,
+                    y: 0.,
+                    z: 0.,
+                }
+                .rotate_y(self.camera.rotation.x);
             }
             if keys.contains(&Keycode::S) {
-                self.camera.pos = self.camera.pos
-                    + Vec3 {
-                        x: 0.,
-                        y: 0.,
-                        z: -SPEED * dt,
-                    }
-                    .rotate_y(self.camera.rotation.x);
+                v = v + Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: -SPEED,
+                }
+                .rotate_y(self.camera.rotation.x);
             }
-            // if keys.contains(&Keycode::Space) {
-            //     v = v + Vec3 {
-            //         x: 0.,
-            //         y: -20.,
-            //         z: 0.,
-            //     }
-            // }
 
             // jump, gravity & collision
+            self.camera.vel = v;
 
             // replace with collision statement
 
-            // start for tests
-            if false {
-                if self.camera.pos.y >= 1.5 {
-                    v.y = 0.;
-                    self.camera.pos.y = 1.5;
-                    if keys.contains(&Keycode::Space) {
-                        self.camera.pos.y = 1.4;
-                        v = v + Vec3 {
-                            x: 0.,
-                            y: -40.,
-                            z: 0.,
-                        }
-                    }
-                } else {
-                    self.camera.pos = self.camera.pos
-                        + Vec3 {
-                            x: 0.,
-                            y: v.y * time.elapsed().as_secs_f64()
-                                + (GRAVITY * time.elapsed().as_secs_f64().powi(2)) / 2.,
-                            z: 0.,
-                        };
-                    v.y += GRAVITY * time.elapsed().as_secs_f64();
+            self.camera.vel.y += GRAVITY * dt;
+
+            const PLAYER_WIDTH: f64 = 1.;
+            if let Some(d) = collides(
+                &mesh,
+                self.camera.pos,
+                Vec3 {
+                    x: 0.,
+                    y: self.camera.vel.y,
+                    z: 0.,
+                },
+                PLAYER_WIDTH,
+                dt,
+            ) {
+                self.camera.vel.y = self.camera.vel.y.signum() * d;
+
+                if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
+                    self.camera.vel.y = -40.
                 }
             }
 
-            if keys.contains(&Keycode::Space) {
-                self.camera.pos.y -= SPEED * time.elapsed().as_secs_f64();
+            if let Some(d) = collides(
+                &mesh,
+                self.camera.pos,
+                Vec3 {
+                    x: self.camera.vel.x,
+                    y: 0.,
+                    z: self.camera.vel.z,
+                },
+                PLAYER_WIDTH,
+                dt,
+            ) {
+                let new_v = Vec3 {
+                    x: self.camera.vel.x,
+                    y: 0.,
+                    z: self.camera.vel.z,
+                }
+                .norm()
+                    * d;
+                self.camera.vel.x = new_v.x;
+                self.camera.vel.z = new_v.z;
             }
-            if keys.contains(&Keycode::LShift) {
-                self.camera.pos.y += SPEED * time.elapsed().as_secs_f64();
-            }
-            // end for tests
 
-            let fps = &format!(
-                "\r\nfps: {:.2?}",
-                1. / (time.elapsed().as_micros() as f64 / 1_000_000.)
-            );
-
-            // reset timer
-            time = Instant::now();
-
-            // render vertices
-            self.renderer
-                .render_mt(&self.camera, &mesh, &format!("{}", fps), true);
+            self.camera.update_pos(dt);
         }
     }
 }

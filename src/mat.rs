@@ -250,3 +250,42 @@ impl Div<f64> for Vec3 {
 }
 
 //
+
+pub fn collides(mesh: &Mesh, pos: Vec3, vel: Vec3, offset: f64, dt: f64) -> Option<f64> {
+    let mut min_distance = None;
+
+    let tris = mesh.tris();
+
+    for x in -1..=1 {
+        for y in -1..=1 {
+            for z in -1..=1 {
+                for tri in tris.iter() {
+                    let (hit, dist) = tri.hit_mt(
+                        pos + Vec3 {
+                            x: x as f64 * offset,
+                            y: y as f64 * offset,
+                            z: z as f64 * offset,
+                        },
+                        vel,
+                    );
+                    if hit {
+                        if dist <= vel.abs() * dt {
+                            if let Some(d) = min_distance {
+                                if dist < d {
+                                    min_distance = Some(dist)
+                                }
+                            } else {
+                                min_distance = Some(dist)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if let Some(t) = min_distance {
+        return Some(t / dt);
+    } else {
+        None
+    }
+}
