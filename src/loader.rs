@@ -96,46 +96,46 @@ const WALL: [[(f64, f64, f64); 8]; 4] = [
 const HOLE: [[(f64, f64, f64); 8]; 4] = [
     // front face
     [
-        (0., GW, 0.),
-        (GW, GW, 0.),
+        (0., GW * 0.9, 0.),
+        (GW, GW * 0.9, 0.),
         (GW, RENDER_DIST * 3., 0.),
         (235., 52., 189.),
-        (0., GW, 0.),
+        (0., GW * 0.9, 0.),
         (GW, RENDER_DIST * 3., 0.),
         (0., RENDER_DIST * 3., 0.),
         (235., 52., 189.),
     ],
     // back face
     [
-        (0., GW, GW),
-        (GW, GW, GW),
+        (0., GW * 0.9, GW),
+        (GW, GW * 0.9, GW),
         (GW, RENDER_DIST * 3., GW),
         (235., 52., 189.),
-        (0., GW, GW),
+        (0., GW * 0.9, GW),
         (GW, RENDER_DIST * 3., GW),
         (0., RENDER_DIST * 3., GW),
         (235., 52., 189.),
     ],
     //left face
     [
-        (0., GW, 0.),
-        (0., GW, GW),
+        (0., GW * 0.9, 0.),
+        (0., GW * 0.9, GW),
         (0., RENDER_DIST * 3., 0.),
         (235., 52., 189.),
         (0., RENDER_DIST * 3., 0.),
         (0., RENDER_DIST * 3., GW),
-        (0., GW, GW),
+        (0., GW * 0.9, GW),
         (235., 52., 189.),
     ],
     // right face
     [
-        (GW, GW, 0.),
-        (GW, GW, GW),
+        (GW, GW * 0.9, 0.),
+        (GW, GW * 0.9, GW),
         (GW, RENDER_DIST * 3., 0.),
         (235., 52., 189.),
         (GW, RENDER_DIST * 3., 0.),
         (GW, RENDER_DIST * 3., GW),
-        (GW, GW, GW),
+        (GW, GW * 0.9, GW),
         (235., 52., 189.),
     ],
 ];
