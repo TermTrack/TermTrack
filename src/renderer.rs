@@ -16,10 +16,13 @@ impl Screen {
         let (w, h) = crossterm::terminal::size().unwrap();
         let raw = crossterm::terminal::enable_raw_mode().unwrap();
         let mut stdout = std::io::stdout();
-        crossterm::execute!(stdout, crossterm::terminal::EnterAlternateScreen).unwrap();
+        crossterm::execute!(
+            stdout,
+            crossterm::terminal::EnterAlternateScreen,
+            crossterm::cursor::Hide
+        )
+        .unwrap();
         let h = h - 1;
-        // hide cursor
-        print!("\x1b[?25l");
 
         //clear screen
         print!("\x1b[2J");

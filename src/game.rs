@@ -177,13 +177,21 @@ impl Game {
                 if next_pc.intersects(collider) {
                     // calculate collided distance, set position to not colliding & delete velocity in x direction
                     if dir.x < 0. {
-                        self.camera.pos.x = self.camera.pos.x
-                            + (collider.max_x - next_pc.min_x)
-                            + self.camera.vel.x * dt;
+                        self.camera.pos.x +=
+                            (collider.max_x - next_pc.min_x) + self.camera.vel.x * dt;
+                        next_pc.translate(Vec3 {
+                            x: (collider.max_x - next_pc.min_x),
+                            y: 0.,
+                            z: 0.,
+                        })
                     } else if dir.x > 0. {
-                        self.camera.pos.x = self.camera.pos.x
-                            + (collider.min_x - next_pc.max_x)
-                            + self.camera.vel.x * dt;
+                        self.camera.pos.x +=
+                            (collider.min_x - next_pc.max_x) + self.camera.vel.x * dt;
+                        next_pc.translate(Vec3 {
+                            x: (collider.min_x - next_pc.max_x),
+                            y: 0.,
+                            z: 0.,
+                        })
                     }
 
                     self.camera.vel.x = 0.;
@@ -200,13 +208,22 @@ impl Game {
                 if next_pc.intersects(collider) {
                     // calculate collided distance, set position to not colliding & delete velocity in z direction
                     if dir.z < 0. {
-                        self.camera.pos.z = self.camera.pos.z
-                            + (collider.max_z - next_pc.min_z)
-                            + self.camera.vel.z * dt;
+                        self.camera.pos.z +=
+                            (collider.max_z - next_pc.min_z) + self.camera.vel.z * dt;
+
+                        next_pc.translate(Vec3 {
+                            x: 0.,
+                            y: 0.,
+                            z: (collider.max_z - next_pc.min_z),
+                        })
                     } else if dir.z > 0. {
-                        self.camera.pos.z = self.camera.pos.z
-                            + (collider.min_z - next_pc.max_z)
-                            + self.camera.vel.z * dt;
+                        self.camera.pos.z +=
+                            (collider.min_z - next_pc.max_z) + self.camera.vel.z * dt;
+                        next_pc.translate(Vec3 {
+                            x: 0.,
+                            y: 0.,
+                            z: (collider.min_z - next_pc.max_z),
+                        })
                     }
 
                     self.camera.vel.z = 0.;
@@ -222,17 +239,16 @@ impl Game {
                 // checking for collision in y and fixing position
                 if next_pc.intersects(collider) {
                     // calculate collided distance, set position to not colliding & delete velocity in y direction
-                    self.camera.vel.y = 0.;
                     if dir.y < 0. {
-                        self.camera.pos.y = self.camera.pos.y
-                            + (collider.max_y - next_pc.min_y)
-                            + self.camera.vel.y * dt;
-                    } else if dir.x > 0. {
-                        self.camera.pos.y = self.camera.pos.y
-                            + (collider.min_y - next_pc.max_y)
-                            + self.camera.vel.y * dt;
+                        self.camera.pos.y +=
+                            (collider.max_y - next_pc.min_y) + self.camera.vel.y * dt;
+                        self.camera.vel.y = 0.;
+                    } else if dir.y > 0. {
+                        self.camera.pos.y +=
+                            (collider.min_y - next_pc.max_y) + self.camera.vel.y * dt;
+                        self.camera.vel.y = 0.;
                         if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
-                            self.camera.vel.y = -40.
+                            self.camera.vel.y = -40.;
                         }
                     }
                 }

@@ -274,12 +274,13 @@ impl BoxCollider {
     }
 
     pub fn intersects(&self, other: &BoxCollider) -> bool {
-        self.min_x <= other.max_x
-            && self.min_y <= other.max_y
-            && self.min_z <= other.max_z
-            && self.max_x >= other.min_x
-            && self.max_y >= other.min_y
-            && self.max_z >= other.min_z
+        let margin: f64 = 1. / 1000.;
+        self.min_x < other.max_x - margin
+            && self.min_y < other.max_y - margin
+            && self.min_z < other.max_z - margin
+            && self.max_x > other.min_x + margin
+            && self.max_y > other.min_y + margin
+            && self.max_z > other.min_z + margin
     }
 
     pub fn translate(&mut self, pos: Vec3) {

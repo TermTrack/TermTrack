@@ -1,6 +1,6 @@
 use crate::mat::*;
 
-pub const GW: f64 = 20.;
+pub const GW: f64 = 10.;
 
 // pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
 // XS.......X...............X
@@ -91,6 +91,8 @@ const WALL: [[(f64, f64, f64); 8]; 4] = [
         (235., 52., 189.),
     ],
 ];
+
+const WALL_COLLIDER: [(f64, f64, f64); 2] = [(0., GW, 0.), (GW, 0., GW)];
 
 // const HOLE: [[(f64, f64, f64); 8]; 4] = [
 //     // front face
@@ -346,6 +348,8 @@ pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64)) {
                             // add right wall
                             grid = grid + Mesh::new(Vec::from(WALL[3]));
                         }
+
+                        collider = Some(BoxCollider::new(WALL_COLLIDER[0], WALL_COLLIDER[1]));
                     }
 
                     '.' => {
