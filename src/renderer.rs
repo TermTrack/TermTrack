@@ -17,7 +17,7 @@ impl Screen {
         let raw = crossterm::terminal::enable_raw_mode().unwrap();
         let mut stdout = std::io::stdout();
         crossterm::execute!(stdout, crossterm::terminal::EnterAlternateScreen).unwrap();
-        let h = h - 2;
+        let h = h - 1;
         // hide cursor
         print!("\x1b[?25l");
 
@@ -191,11 +191,17 @@ impl Screen {
     }
 
     fn print_info(&self, camera: &Camera, extra: &str) {
-        print!("\x1b[48;1;0m{}", extra)
+        print!("\x1b[48;1;0m{:<1$}", extra, self.w);
     }
 
     pub fn render_map(&self, map: &str, position: Vec3, grid_width: f64) {
-        let mut map: Vec<_> = map.split("\n").collect();
+        let map = map_as_vec_of_floors(map);
+
+        let mut map: Vec<&str> = map
+            .get((-position.y.div_euclid(grid_width as f64)) as usize)
+            .unwrap_or(map.last().unwrap_or(&vec![]))
+            .clone();
+
         let height = map.len();
         let mut width = 0;
         let [pos_x, pos_y] = [
@@ -252,6 +258,14 @@ impl Screen {
         );
         println!("\x1b[{};{}H|{:^3$}|\r", y_start, x_start, " ", width + 4);
     }
+}
+
+pub fn map_as_vec_of_floors(map: &str) -> Vec<Vec<&str>> {
+    let mut map: Vec<Vec<&str>> = map
+        .split("sep\n")
+        .map(|x| x.split("\n").collect())
+        .collect();
+    map
 }
 
 #[cfg(test)]

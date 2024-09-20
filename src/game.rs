@@ -1,8 +1,12 @@
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 
 use crate::loader::{self, load};
-use crate::renderer::*;
+use crate::GW;
 use crate::{camera::Camera, mat::*};
+use crate::{
+    renderer::{self, *},
+    MAP,
+};
 use core::panic;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -26,11 +30,15 @@ impl Game {
         let mesh = load(loader::MAP).0;
         let colliders = load(loader::MAP).1;
 
+        let mut level_timer = Instant::now();
+
         // timer for fps
         let mut time = Instant::now();
 
         // device for input
         let device_state = DeviceState::new();
+
+        let floors = renderer::map_as_vec_of_floors(MAP).len();
 
         loop {
             // reset timer
@@ -39,11 +47,21 @@ impl Game {
 
             // get list off all vertices
 
-            let fps = &format!("\r\nfps: {:.2?}", 1. / (dt));
+            let fps_text = &format!("fps: {:.2?} ", 1. / (dt));
+            let timer_text = &format!("time: {:.1?} ", level_timer.elapsed());
+            let floor_text = &format!(
+                "floor: {}/{}",
+                (-self.camera.pos.y.div_euclid(GW)).clamp(0., floors as f64) as usize,
+                floors
+            );
 
             // render vertices
-            self.renderer
-                .render_mt(&self.camera, &mesh, &format!("{} dt: {}", fps, dt), true);
+            self.renderer.render_mt(
+                &self.camera,
+                &mesh,
+                &format!("{}{}{}", fps_text, timer_text, floor_text),
+                true,
+            );
 
             // handle input
             let mouse = device_state.get_mouse();
