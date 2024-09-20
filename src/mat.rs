@@ -251,6 +251,47 @@ impl Div<f64> for Vec3 {
 
 //
 
+#[derive(Clone)]
+pub struct BoxCollider {
+    pub max_x: f64,
+    pub max_y: f64,
+    pub max_z: f64,
+    pub min_x: f64,
+    pub min_y: f64,
+    pub min_z: f64,
+}
+
+impl BoxCollider {
+    pub fn new(p1: (f64, f64, f64), p2: (f64, f64, f64)) -> BoxCollider {
+        BoxCollider {
+            min_x: p1.0,
+            min_y: p2.1,
+            min_z: p1.2,
+            max_x: p2.0,
+            max_y: p1.1,
+            max_z: p2.2,
+        }
+    }
+
+    pub fn intersects(&self, other: &BoxCollider) -> bool {
+        self.min_x <= other.max_x
+            && self.min_y <= other.max_y
+            && self.min_z <= other.max_z
+            && self.max_x >= other.min_x
+            && self.max_y >= other.min_y
+            && self.max_z >= other.min_z
+    }
+
+    pub fn translate(&mut self, pos: Vec3) {
+        self.min_x += pos.x;
+        self.max_x += pos.x;
+        self.min_y += pos.y;
+        self.max_y += pos.y;
+        self.min_z += pos.z;
+        self.max_z += pos.z;
+    }
+}
+
 pub fn collides(mesh: &Mesh, pos: Vec3, vel: Vec3, offset: f64, dt: f64) -> Option<f64> {
     let mut min_distance = None;
 
@@ -269,7 +310,7 @@ pub fn collides(mesh: &Mesh, pos: Vec3, vel: Vec3, offset: f64, dt: f64) -> Opti
                         vel,
                     );
                     if hit {
-                        if dist <= vel.abs() * dt {
+                        if dist <= vel.abs() * dt + offset {
                             if let Some(d) = min_distance {
                                 if dist < d {
                                     min_distance = Some(dist)
@@ -283,8 +324,8 @@ pub fn collides(mesh: &Mesh, pos: Vec3, vel: Vec3, offset: f64, dt: f64) -> Opti
             }
         }
     }
-    if let Some(t) = min_distance {
-        return Some(t / dt);
+    if let Some(min_dist) = min_distance {
+        return Some(min_dist / dt);
     } else {
         None
     }

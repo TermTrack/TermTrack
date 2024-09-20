@@ -15,6 +15,8 @@ pub struct Game {
 const SPEED: f64 = 50.;
 const ROTATION_SPEED: f64 = 1.5;
 const GRAVITY: f64 = 80.;
+const PLAYER_WIDTH: f64 = 1.;
+const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
 
 impl Game {
     pub fn run(&mut self) {
@@ -22,6 +24,7 @@ impl Game {
         // generate map meshes
 
         let mesh = load(loader::MAP).0;
+        let colliders = load(loader::MAP).1;
 
         // timer for fps
         let mut time = Instant::now();
@@ -125,53 +128,143 @@ impl Game {
                 .rotate_y(self.camera.rotation.x);
             }
 
-            // jump, gravity & collision
+            // add gravity
             self.camera.vel = v;
-
-            // replace with collision statement
-
             self.camera.vel.y += GRAVITY * dt;
 
-            const PLAYER_WIDTH: f64 = 1.;
-            if let Some(d) = collides(
-                &mesh,
-                self.camera.pos,
-                Vec3 {
-                    x: 0.,
-                    y: self.camera.vel.y,
+            // collision
+
+            // get current player collider & translate it to position + velocity vector
+            let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
+            current_pc.translate(self.camera.pos);
+
+            let dir = Vec3 {
+                x: self.camera.vel.x.signum(),
+                y: self.camera.vel.y.signum(),
+                z: self.camera.vel.z.signum(),
+            };
+
+            for collider in colliders.iter() {
+                // temporary variable for imagining next position
+                let mut next_pc = current_pc.clone();
+
+                // adding x distance to next_pc
+                next_pc.translate(Vec3 {
+                    x: self.camera.vel.x * dt,
+                    y: 0.,
                     z: 0.,
-                },
-                PLAYER_WIDTH,
-                dt,
-            ) {
-                self.camera.vel.y = self.camera.vel.y.signum() * d;
+                });
 
-                if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
-                    self.camera.vel.y = -40.
+                // checking for collision in x and fixing position
+                if next_pc.intersects(collider) {
+                    // calculate collided distance, set position to not colliding & delete velocity in x direction
+                    if dir.x < 0. {
+                        self.camera.pos.x = self.camera.pos.x
+                            + (collider.max_x - next_pc.min_x)
+                            + self.camera.vel.x * dt;
+                    } else if dir.x > 0. {
+                        self.camera.pos.x = self.camera.pos.x
+                            + (collider.min_x - next_pc.max_x)
+                            + self.camera.vel.x * dt;
+                    }
+
+                    self.camera.vel.x = 0.;
                 }
+
+                // adding z distance to next_pc
+                next_pc.translate(Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: self.camera.vel.z * dt,
+                });
+
+                // checking for collision in z and fixing position
+                if next_pc.intersects(collider) {
+                    // calculate collided distance, set position to not colliding & delete velocity in z direction
+                    if dir.z < 0. {
+                        self.camera.pos.z = self.camera.pos.z
+                            + (collider.max_z - next_pc.min_z)
+                            + self.camera.vel.z * dt;
+                    } else if dir.z > 0. {
+                        self.camera.pos.z = self.camera.pos.z
+                            + (collider.min_z - next_pc.max_z)
+                            + self.camera.vel.z * dt;
+                    }
+
+                    self.camera.vel.z = 0.;
+                }
+
+                // adding y distance to next_pc
+                next_pc.translate(Vec3 {
+                    x: 0.,
+                    y: self.camera.vel.y * dt,
+                    z: 0.,
+                });
+
+                // checking for collision in y and fixing position
+                if next_pc.intersects(collider) {
+                    // calculate collided distance, set position to not colliding & delete velocity in y direction
+                    self.camera.vel.y = 0.;
+                    if dir.y < 0. {
+                        self.camera.pos.y = self.camera.pos.y
+                            + (collider.max_y - next_pc.min_y)
+                            + self.camera.vel.y * dt;
+                    } else if dir.x > 0. {
+                        self.camera.pos.y = self.camera.pos.y
+                            + (collider.min_y - next_pc.max_y)
+                            + self.camera.vel.y * dt;
+                        if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
+                            self.camera.vel.y = -40.
+                        }
+                    }
+                }
+
+                current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
+                current_pc.translate(self.camera.pos);
             }
 
-            if let Some(d) = collides(
-                &mesh,
-                self.camera.pos,
-                Vec3 {
-                    x: self.camera.vel.x,
-                    y: 0.,
-                    z: self.camera.vel.z,
-                },
-                PLAYER_WIDTH,
-                dt,
-            ) {
-                let new_v = Vec3 {
-                    x: self.camera.vel.x,
-                    y: 0.,
-                    z: self.camera.vel.z,
-                }
-                .norm()
-                    * d;
-                self.camera.vel.x = new_v.x;
-                self.camera.vel.z = new_v.z;
-            }
+            ///////// old collision ////////////
+            // if let Some(d) = collides(
+            //     &mesh,
+            //     self.camera.pos,
+            //     Vec3 {
+            //         x: 0.,
+            //         y: self.camera.vel.y,
+            //         z: 0.,
+            //     },
+            //     PLAYER_WIDTH,
+            //     dt,
+            // ) {
+            //     self.camera.vel.y = self.camera.vel.y.signum() * d;
+
+            //     if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
+            //         self.camera.vel.y = -40.
+            //     }
+            // }
+
+            // if let Some(d) = collides(
+            //     &mesh,
+            //     self.camera.pos,
+            //     Vec3 {
+            //         x: self.camera.vel.x,
+            //         y: 0.,
+            //         z: self.camera.vel.z,
+            //     },
+            //     PLAYER_WIDTH,
+            //     dt,
+            // ) {
+            //     let new_v = Vec3 {
+            //         x: self.camera.vel.x,
+            //         y: 0.,
+            //         z: self.camera.vel.z,
+            //     }
+            //     .norm()
+            //         * d;
+            //     self.camera.vel.x = new_v.x;
+            //     self.camera.vel.z = new_v.z;
+            // }
+
+            //////////////////////////////////////////
 
             self.camera.update_pos(dt);
         }

@@ -1,5 +1,4 @@
 use crate::mat::*;
-use crate::renderer::RENDER_DIST;
 
 pub const GW: f64 = 20.;
 
@@ -93,52 +92,52 @@ const WALL: [[(f64, f64, f64); 8]; 4] = [
     ],
 ];
 
-const HOLE: [[(f64, f64, f64); 8]; 4] = [
-    // front face
-    [
-        (0., GW * 0.9, 0.),
-        (GW, GW * 0.9, 0.),
-        (GW, RENDER_DIST * 3., 0.),
-        (235., 52., 189.),
-        (0., GW * 0.9, 0.),
-        (GW, RENDER_DIST * 3., 0.),
-        (0., RENDER_DIST * 3., 0.),
-        (235., 52., 189.),
-    ],
-    // back face
-    [
-        (0., GW * 0.9, GW),
-        (GW, GW * 0.9, GW),
-        (GW, RENDER_DIST * 3., GW),
-        (235., 52., 189.),
-        (0., GW * 0.9, GW),
-        (GW, RENDER_DIST * 3., GW),
-        (0., RENDER_DIST * 3., GW),
-        (235., 52., 189.),
-    ],
-    //left face
-    [
-        (0., GW * 0.9, 0.),
-        (0., GW * 0.9, GW),
-        (0., RENDER_DIST * 3., 0.),
-        (235., 52., 189.),
-        (0., RENDER_DIST * 3., 0.),
-        (0., RENDER_DIST * 3., GW),
-        (0., GW * 0.9, GW),
-        (235., 52., 189.),
-    ],
-    // right face
-    [
-        (GW, GW * 0.9, 0.),
-        (GW, GW * 0.9, GW),
-        (GW, RENDER_DIST * 3., 0.),
-        (235., 52., 189.),
-        (GW, RENDER_DIST * 3., 0.),
-        (GW, RENDER_DIST * 3., GW),
-        (GW, GW * 0.9, GW),
-        (235., 52., 189.),
-    ],
-];
+// const HOLE: [[(f64, f64, f64); 8]; 4] = [
+//     // front face
+//     [
+//         (0., GW * 0.9, 0.),
+//         (GW, GW * 0.9, 0.),
+//         (GW, RENDER_DIST * 3., 0.),
+//         (235., 52., 189.),
+//         (0., GW * 0.9, 0.),
+//         (GW, RENDER_DIST * 3., 0.),
+//         (0., RENDER_DIST * 3., 0.),
+//         (235., 52., 189.),
+//     ],
+//     // back face
+//     [
+//         (0., GW * 0.9, GW),
+//         (GW, GW * 0.9, GW),
+//         (GW, RENDER_DIST * 3., GW),
+//         (235., 52., 189.),
+//         (0., GW * 0.9, GW),
+//         (GW, RENDER_DIST * 3., GW),
+//         (0., RENDER_DIST * 3., GW),
+//         (235., 52., 189.),
+//     ],
+//     //left face
+//     [
+//         (0., GW * 0.9, 0.),
+//         (0., GW * 0.9, GW),
+//         (0., RENDER_DIST * 3., 0.),
+//         (235., 52., 189.),
+//         (0., RENDER_DIST * 3., 0.),
+//         (0., RENDER_DIST * 3., GW),
+//         (0., GW * 0.9, GW),
+//         (235., 52., 189.),
+//     ],
+//     // right face
+//     [
+//         (GW, GW * 0.9, 0.),
+//         (GW, GW * 0.9, GW),
+//         (GW, RENDER_DIST * 3., 0.),
+//         (235., 52., 189.),
+//         (GW, RENDER_DIST * 3., 0.),
+//         (GW, RENDER_DIST * 3., GW),
+//         (GW, GW * 0.9, GW),
+//         (235., 52., 189.),
+//     ],
+// ];
 
 const START: [(f64, f64, f64); 8 * 6] = [
     (0., GW * 0.9, 0.),
@@ -190,6 +189,9 @@ const START: [(f64, f64, f64); 8 * 6] = [
     (GW, GW * 0.9, GW),
     (235., 52., 189.),
 ];
+
+const FLOOR_COLLIDER: [(f64, f64, f64); 2] = [(0., GW * 0.9, 0.), (GW, GW, GW)];
+
 const FLOOR: [[(f64, f64, f64); 8]; 6] = [
     // top face
     [
@@ -311,9 +313,11 @@ fn separate_map(map: &str) -> Vec<&str> {
     map.split("sep\n").collect()
 }
 
-pub fn load(map: &str) -> (Mesh, (f64, f64)) {
+pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64)) {
     let mut mesh = Mesh::new([].into());
     let mut start = (0., 0.);
+    let mut colliders: Vec<BoxCollider> = vec![];
+
     for (level, map) in separate_map(map).iter().enumerate() {
         let rows: Vec<&str> = map.split("\n").collect();
         for (z, row) in rows.iter().enumerate() {
@@ -322,6 +326,7 @@ pub fn load(map: &str) -> (Mesh, (f64, f64)) {
             }
             for (x, ch) in row.chars().enumerate() {
                 let mut grid = Mesh::new(vec![]);
+                let mut collider = None;
                 match ch {
                     'X' => {
                         // Adding the visible face
@@ -345,50 +350,32 @@ pub fn load(map: &str) -> (Mesh, (f64, f64)) {
 
                     '.' => {
                         // add floor
-                        grid = grid + Mesh::new(Vec::from(FLOOR[0]));
-                        if level != 0 {
-                            // add lower section (roof)
-                            grid = grid + Mesh::new(Vec::from(FLOOR[1]));
-                            if x != 0 && row.chars().nth(x - 1) != Some('.') {
-                                // add left floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[2]));
-                            }
-                            if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
-                                // add right floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[3]));
-                            }
-                            if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
-                                // add front floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[4]));
-                            }
-                            if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
-                                // add back floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[5]));
-                            }
+                        // add lower section (roof)
+                        grid = grid + Mesh::new(Vec::from(FLOOR[1]));
+                        if x != 0 && row.chars().nth(x - 1) != Some('.') {
+                            // add left floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[2]));
                         }
+                        if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
+                            // add right floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[3]));
+                        }
+                        if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
+                            // add front floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[4]));
+                        }
+                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
+                            // add back floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[5]));
+                        }
+
+                        // add collider to colliders
+
+                        collider = Some(BoxCollider::new(FLOOR_COLLIDER[0], FLOOR_COLLIDER[1]));
                     }
 
                     ' ' => {
-                        if level != 0 {
-                            continue;
-                        }
-                        // Adding the visible face
-                        if z != 0 && rows[z - 1].chars().nth(x) != Some(' ') {
-                            // add upper wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[0]));
-                        }
-                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some(' ') {
-                            // add bottom wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[1]));
-                        }
-                        if x != 0 && rows[z].chars().nth(x - 1) != Some(' ') {
-                            // add left wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[2]));
-                        }
-                        if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some(' ') {
-                            // add right wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[3]));
-                        }
+                        continue;
                     }
 
                     'S' => {
@@ -424,23 +411,7 @@ pub fn load(map: &str) -> (Mesh, (f64, f64)) {
                     }
 
                     'D' => {
-                        // Adding the visible face
-                        if z != 0 && rows[z - 1].chars().nth(x).unwrap() != ' ' {
-                            // add upper wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[0]));
-                        }
-                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x).unwrap() != ' ' {
-                            // add bottom wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[1]));
-                        }
-                        if x != 0 && rows[z].chars().nth(x - 1).unwrap() != ' ' {
-                            // add left wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[2]));
-                        }
-                        if x != row.len() - 1 && rows[z].chars().nth(x + 1).unwrap() != ' ' {
-                            // add right wall
-                            grid = grid + Mesh::new(Vec::from(HOLE[3]));
-                        }
+                        continue;
                     }
 
                     _ => panic!("bad map"),
@@ -469,10 +440,20 @@ pub fn load(map: &str) -> (Mesh, (f64, f64)) {
                 }
 
                 mesh = mesh + grid;
+
+                // Translating collider to position
+                if let Some(mut t) = collider {
+                    t.translate(Vec3 {
+                        x: (x as f64) * GW,
+                        z: (z as f64) * GW,
+                        y: -(level as f64) * GW,
+                    });
+                    colliders.push(t)
+                }
             }
         }
     }
-    (mesh, start)
+    (mesh, colliders, start)
 }
 
 #[cfg(test)]
