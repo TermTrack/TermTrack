@@ -274,7 +274,7 @@ impl BoxCollider {
     }
 
     pub fn intersects(&self, other: &BoxCollider) -> bool {
-        let margin: f64 = 1. / 1000.;
+        let margin: f64 = 1. / 500.;
         self.min_x < other.max_x - margin
             && self.min_y < other.max_y - margin
             && self.min_z < other.max_z - margin

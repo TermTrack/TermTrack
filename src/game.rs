@@ -179,22 +179,15 @@ impl Game {
                     if dir.x < 0. {
                         self.camera.pos.x +=
                             (collider.max_x - next_pc.min_x) + self.camera.vel.x * dt;
-                        next_pc.translate(Vec3 {
-                            x: (collider.max_x - next_pc.min_x),
-                            y: 0.,
-                            z: 0.,
-                        })
                     } else if dir.x > 0. {
                         self.camera.pos.x +=
                             (collider.min_x - next_pc.max_x) + self.camera.vel.x * dt;
-                        next_pc.translate(Vec3 {
-                            x: (collider.min_x - next_pc.max_x),
-                            y: 0.,
-                            z: 0.,
-                        })
                     }
 
                     self.camera.vel.x = 0.;
+                    current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
+                    current_pc.translate(self.camera.pos);
+                    continue;
                 }
 
                 // adding z distance to next_pc
@@ -210,23 +203,14 @@ impl Game {
                     if dir.z < 0. {
                         self.camera.pos.z +=
                             (collider.max_z - next_pc.min_z) + self.camera.vel.z * dt;
-
-                        next_pc.translate(Vec3 {
-                            x: 0.,
-                            y: 0.,
-                            z: (collider.max_z - next_pc.min_z),
-                        })
                     } else if dir.z > 0. {
                         self.camera.pos.z +=
                             (collider.min_z - next_pc.max_z) + self.camera.vel.z * dt;
-                        next_pc.translate(Vec3 {
-                            x: 0.,
-                            y: 0.,
-                            z: (collider.min_z - next_pc.max_z),
-                        })
                     }
-
                     self.camera.vel.z = 0.;
+                    current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
+                    current_pc.translate(self.camera.pos);
+                    continue;
                 }
 
                 // adding y distance to next_pc
@@ -251,10 +235,10 @@ impl Game {
                             self.camera.vel.y = -40.;
                         }
                     }
+                    current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
+                    current_pc.translate(self.camera.pos);
+                    continue;
                 }
-
-                current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
-                current_pc.translate(self.camera.pos);
             }
 
             ///////// old collision ////////////

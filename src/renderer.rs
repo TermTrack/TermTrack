@@ -157,13 +157,12 @@ impl Screen {
                     z: camera.focus_length,
                 };
                 let pixel_coords = pixel_coords.rotate(camera.rotation);
-                let pixel_distance = pixel_coords.abs();
                 let ray_dir = pixel_coords;
-                let ray_o = camera.pos + pixel_coords;
+                let ray_o = camera.pos;
                 let mut closet_idx = None;
                 for (idx, tri) in tris.iter().enumerate() {
                     let (hit, distance) = tri.hit_mt(ray_o, ray_dir);
-                    let distance = distance - pixel_distance;
+                    let distance = distance;
                     if hit {
                         if distance < min_dist {
                             min_dist = distance;
