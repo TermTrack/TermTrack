@@ -162,6 +162,8 @@ impl Game {
                 z: self.camera.vel.z.signum(),
             };
 
+            let margin = 1. / 200.;
+
             for collider in colliders.iter() {
                 // temporary variable for imagining next position
                 let mut next_pc = current_pc.clone();
@@ -178,10 +180,10 @@ impl Game {
                     // calculate collided distance, set position to not colliding & delete velocity in x direction
                     if dir.x < 0. {
                         self.camera.pos.x +=
-                            (collider.max_x - next_pc.min_x) + self.camera.vel.x * dt;
+                            (collider.max_x - next_pc.min_x) + margin + self.camera.vel.x * dt;
                     } else if dir.x > 0. {
                         self.camera.pos.x +=
-                            (collider.min_x - next_pc.max_x) + self.camera.vel.x * dt;
+                            (collider.min_x - next_pc.max_x) - margin + self.camera.vel.x * dt;
                     }
 
                     self.camera.vel.x = 0.;
@@ -202,10 +204,10 @@ impl Game {
                     // calculate collided distance, set position to not colliding & delete velocity in z direction
                     if dir.z < 0. {
                         self.camera.pos.z +=
-                            (collider.max_z - next_pc.min_z) + self.camera.vel.z * dt;
+                            (collider.max_z - next_pc.min_z) + margin + self.camera.vel.z * dt;
                     } else if dir.z > 0. {
                         self.camera.pos.z +=
-                            (collider.min_z - next_pc.max_z) + self.camera.vel.z * dt;
+                            (collider.min_z - next_pc.max_z) - margin + self.camera.vel.z * dt;
                     }
                     self.camera.vel.z = 0.;
                     current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
@@ -225,11 +227,11 @@ impl Game {
                     // calculate collided distance, set position to not colliding & delete velocity in y direction
                     if dir.y < 0. {
                         self.camera.pos.y +=
-                            (collider.max_y - next_pc.min_y) + self.camera.vel.y * dt;
+                            (collider.max_y - next_pc.min_y) + margin + self.camera.vel.y * dt;
                         self.camera.vel.y = 0.;
                     } else if dir.y > 0. {
                         self.camera.pos.y +=
-                            (collider.min_y - next_pc.max_y) + self.camera.vel.y * dt;
+                            (collider.min_y - next_pc.max_y) - margin + self.camera.vel.y * dt;
                         self.camera.vel.y = 0.;
                         if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
                             self.camera.vel.y = -40.;
