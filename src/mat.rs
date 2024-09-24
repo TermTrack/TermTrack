@@ -259,10 +259,11 @@ pub struct BoxCollider {
     pub min_x: f64,
     pub min_y: f64,
     pub min_z: f64,
+    pub tag: Option<&'static str>,
 }
 
 impl BoxCollider {
-    pub fn new(p1: (f64, f64, f64), p2: (f64, f64, f64)) -> BoxCollider {
+    pub fn new(p1: (f64, f64, f64), p2: (f64, f64, f64), tag: Option<&'static str>) -> BoxCollider {
         BoxCollider {
             min_x: p1.0,
             min_y: p2.1,
@@ -270,11 +271,12 @@ impl BoxCollider {
             max_x: p2.0,
             max_y: p1.1,
             max_z: p2.2,
+            tag,
         }
     }
 
     pub fn intersects(&self, other: &BoxCollider) -> bool {
-        let margin: f64 = 1. / 500.;
+        let margin: f64 = 1. / 100.;
         self.min_x < other.max_x - margin
             && self.min_y < other.max_y - margin
             && self.min_z < other.max_z - margin
@@ -293,41 +295,92 @@ impl BoxCollider {
     }
 }
 
-pub fn collides(mesh: &Mesh, pos: Vec3, vel: Vec3, offset: f64, dt: f64) -> Option<f64> {
-    let mut min_distance = None;
+pub fn check_collision(
+    pcollider: &mut BoxCollider,
+    pos: &mut Vec3,
+    vel: &mut Vec3,
+    dt: f64,
+    colliders: &Vec<BoxCollider>,
+    grounded: &mut bool,
+) -> Option<&'static str> {
+    let dir = Vec3 {
+        x: vel.x.signum(),
+        y: vel.y.signum(),
+        z: vel.z.signum(),
+    };
 
-    let tris = mesh.tris();
-
-    for x in -1..=1 {
-        for y in -1..=1 {
-            for z in -1..=1 {
-                for tri in tris.iter() {
-                    let (hit, dist) = tri.hit_mt(
-                        pos + Vec3 {
-                            x: x as f64 * offset,
-                            y: y as f64 * offset,
-                            z: z as f64 * offset,
-                        },
-                        vel,
-                    );
-                    if hit {
-                        if dist <= vel.abs() * dt + offset {
-                            if let Some(d) = min_distance {
-                                if dist < d {
-                                    min_distance = Some(dist)
-                                }
-                            } else {
-                                min_distance = Some(dist)
-                            }
-                        }
-                    }
-                }
+    let mut next_pc = pcollider.clone();
+    next_pc.translate(pos.clone());
+    next_pc.translate(Vec3 {
+        x: vel.x * dt,
+        y: 0.,
+        z: 0.,
+    });
+    for collider in colliders.iter() {
+        // checking for collision in x and fixing position
+        if next_pc.intersects(collider) {
+            if let Some(tag) = collider.tag {
+                return Some(tag);
             }
+            // calculate collided distance, set position to not colliding & delete velocity in x direction
+            if dir.x < 0. {
+                pos.x += (collider.max_x - next_pc.min_x) + vel.x * dt;
+            } else if dir.x > 0. {
+                pos.x += (collider.min_x - next_pc.max_x) + vel.x * dt;
+            }
+
+            vel.x = 0.;
+            next_pc = pcollider.clone();
+            next_pc.translate(pos.clone());
         }
     }
-    if let Some(min_dist) = min_distance {
-        return Some(min_dist / dt);
-    } else {
-        None
+    next_pc.translate(Vec3 {
+        x: 0.,
+        y: vel.y * dt,
+        z: 0.,
+    });
+    for collider in colliders.iter() {
+        // checking for collision in x and fixing position
+        if next_pc.intersects(collider) {
+            if let Some(tag) = collider.tag {
+                return Some(tag);
+            }
+            // calculate collided distance, set position to not colliding & delete velocity in x direction
+            if dir.y < 0. {
+                pos.y += (collider.max_y - next_pc.min_y) + vel.y * dt;
+            } else if dir.y > 0. {
+                pos.y += (collider.min_y - next_pc.max_y) + vel.y * dt;
+                *grounded = true;
+            }
+
+            vel.y = 0.;
+            next_pc = pcollider.clone();
+            next_pc.translate(pos.clone());
+        }
     }
+    next_pc.translate(Vec3 {
+        x: 0.,
+        y: 0.,
+        z: vel.z * dt,
+    });
+    for collider in colliders.iter() {
+        // checking for collision in x and fixing position
+        if next_pc.intersects(collider) {
+            if let Some(tag) = collider.tag {
+                return Some(tag);
+            }
+            // calculate collided distance, set position to not colliding & delete velocity in x direction
+            if dir.z < 0. {
+                pos.z += (collider.max_z - next_pc.min_z) + vel.z * dt;
+            } else if dir.z > 0. {
+                pos.z += (collider.min_z - next_pc.max_z) + vel.z * dt;
+            }
+
+            vel.z = 0.;
+            next_pc = pcollider.clone();
+            next_pc.translate(pos.clone());
+        }
+    }
+
+    None
 }

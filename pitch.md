@@ -10,8 +10,8 @@
 
 ## Våra utvecklingsmöjligheter
 
-* rendering från grunden
-* kunskap om terminalen
+* rendering från grunden [x]
+* kunskap om terminalen [x]
 * modulär programmering:
   * utökningsbara system
   * testbara system

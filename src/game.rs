@@ -27,8 +27,13 @@ impl Game {
         // load map files
         // generate map meshes
 
-        let mesh = load(loader::MAP).0;
-        let colliders = load(loader::MAP).1;
+        let (mesh, colliders, start) = load(loader::MAP);
+
+        self.camera.pos = Vec3 {
+            x: start.0,
+            y: start.1,
+            z: start.2,
+        };
 
         let mut level_timer = Instant::now();
 
@@ -151,138 +156,84 @@ impl Game {
             self.camera.vel.y += GRAVITY * dt;
 
             // collision
+            let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1, None);
+            let mut grounded = false;
+            check_collision(
+                &mut current_pc,
+                &mut self.camera.pos,
+                &mut self.camera.vel,
+                dt,
+                &colliders,
+                &mut grounded,
+            );
 
-            // get current player collider & translate it to position + velocity vector
-            let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
-            current_pc.translate(self.camera.pos);
-
-            let dir = Vec3 {
-                x: self.camera.vel.x.signum(),
-                y: self.camera.vel.y.signum(),
-                z: self.camera.vel.z.signum(),
-            };
-
-            for collider in colliders.iter() {
-                // temporary variable for imagining next position
-                let mut next_pc = current_pc.clone();
-
-                // adding x distance to next_pc
-                next_pc.translate(Vec3 {
-                    x: self.camera.vel.x * dt,
-                    y: 0.,
-                    z: 0.,
-                });
-
-                // checking for collision in x and fixing position
-                if next_pc.intersects(collider) {
-                    // calculate collided distance, set position to not colliding & delete velocity in x direction
-                    if dir.x < 0. {
-                        self.camera.pos.x +=
-                            (collider.max_x - next_pc.min_x) + self.camera.vel.x * dt;
-                    } else if dir.x > 0. {
-                        self.camera.pos.x +=
-                            (collider.min_x - next_pc.max_x) + self.camera.vel.x * dt;
-                    }
-
-                    self.camera.vel.x = 0.;
-                    current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
-                    current_pc.translate(self.camera.pos);
-                    continue;
-                }
-
-                // adding z distance to next_pc
-                next_pc.translate(Vec3 {
-                    x: 0.,
-                    y: 0.,
-                    z: self.camera.vel.z * dt,
-                });
-
-                // checking for collision in z and fixing position
-                if next_pc.intersects(collider) {
-                    // calculate collided distance, set position to not colliding & delete velocity in z direction
-                    if dir.z < 0. {
-                        self.camera.pos.z +=
-                            (collider.max_z - next_pc.min_z) + self.camera.vel.z * dt;
-                    } else if dir.z > 0. {
-                        self.camera.pos.z +=
-                            (collider.min_z - next_pc.max_z) + self.camera.vel.z * dt;
-                    }
-                    self.camera.vel.z = 0.;
-                    current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
-                    current_pc.translate(self.camera.pos);
-                    continue;
-                }
-
-                // adding y distance to next_pc
-                next_pc.translate(Vec3 {
-                    x: 0.,
-                    y: self.camera.vel.y * dt,
-                    z: 0.,
-                });
-
-                // checking for collision in y and fixing position
-                if next_pc.intersects(collider) {
-                    // calculate collided distance, set position to not colliding & delete velocity in y direction
-                    if dir.y < 0. {
-                        self.camera.pos.y +=
-                            (collider.max_y - next_pc.min_y) + self.camera.vel.y * dt;
-                        self.camera.vel.y = 0.;
-                    } else if dir.y > 0. {
-                        self.camera.pos.y +=
-                            (collider.min_y - next_pc.max_y) + self.camera.vel.y * dt;
-                        self.camera.vel.y = 0.;
-                        if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
-                            self.camera.vel.y = -40.;
-                        }
-                    }
-                    current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
-                    current_pc.translate(self.camera.pos);
-                    continue;
-                }
+            if grounded && keys.contains(&Keycode::Space) {
+                self.camera.vel.y = -40.;
             }
+            // // get current player collider & translate it to position + velocity vector
+            // current_pc.translate(self.camera.pos);
 
-            ///////// old collision ////////////
-            // if let Some(d) = collides(
-            //     &mesh,
-            //     self.camera.pos,
-            //     Vec3 {
-            //         x: 0.,
-            //         y: self.camera.vel.y,
+            // for collider in colliders.iter() {
+            //     // temporary variable for imagining next position
+            //     let mut next_pc = current_pc.clone();
+
+            //     // adding x distance to next_pc
+            //     next_pc.translate(Vec3 {
+            //         x: self.camera.vel.x * dt,
+            //         y: 0.,
             //         z: 0.,
-            //     },
-            //     PLAYER_WIDTH,
-            //     dt,
-            // ) {
-            //     self.camera.vel.y = self.camera.vel.y.signum() * d;
+            //     });
 
-            //     if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
-            //         self.camera.vel.y = -40.
+            //     // adding z distance to next_pc
+            //     next_pc.translate(Vec3 {
+            //         x: 0.,
+            //         y: 0.,
+            //         z: self.camera.vel.z * dt,
+            //     });
+
+            //     // checking for collision in z and fixing position
+            //     if next_pc.intersects(collider) {
+            //         // calculate collided distance, set position to not colliding & delete velocity in z direction
+            //         if dir.z < 0. {
+            //             self.camera.pos.z +=
+            //                 (collider.max_z - next_pc.min_z) + self.camera.vel.z * dt;
+            //         } else if dir.z > 0. {
+            //             self.camera.pos.z +=
+            //                 (collider.min_z - next_pc.max_z) + self.camera.vel.z * dt;
+            //         }
+            //         self.camera.vel.z = 0.;
+            //         current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
+            //         current_pc.translate(self.camera.pos);
+            //         continue;
+            //     }
+
+            //     // adding y distance to next_pc
+            // next_pc.translate(Vec3 {
+            //     x: 0.,
+            //     y: self.camera.vel.y * dt,
+            //     z: 0.,
+            // });
+
+            // checking for collision in y and fixing position
+            // if next_pc.intersects(collider) {
+            //     // calculate collided distance, set position to not colliding & delete velocity in y direction
+            //     if dir.y < 0. {
+            //         self.camera.pos.y +=
+            //             (collider.max_y - next_pc.min_y) + self.camera.vel.y * dt;
+            //         self.camera.vel.y = 0.;
+            //     } else if dir.y > 0. {
+            //         self.camera.pos.y +=
+            //             (collider.min_y - next_pc.max_y) + self.camera.vel.y * dt;
+            //         self.camera.vel.y = 0.;
+            // if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
+            //     self.camera.vel.y = -40.;
+            //             }
+            //         }
+            //         current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
+            //         current_pc.translate(self.camera.pos);
+            //         continue;
             //     }
             // }
-
-            // if let Some(d) = collides(
-            //     &mesh,
-            //     self.camera.pos,
-            //     Vec3 {
-            //         x: self.camera.vel.x,
-            //         y: 0.,
-            //         z: self.camera.vel.z,
-            //     },
-            //     PLAYER_WIDTH,
-            //     dt,
-            // ) {
-            //     let new_v = Vec3 {
-            //         x: self.camera.vel.x,
-            //         y: 0.,
-            //         z: self.camera.vel.z,
-            //     }
-            //     .norm()
-            //         * d;
-            //     self.camera.vel.x = new_v.x;
-            //     self.camera.vel.z = new_v.z;
-            // }
-
-            //////////////////////////////////////////
 
             self.camera.update_pos(dt);
         }
