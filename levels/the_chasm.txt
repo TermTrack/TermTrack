@@ -1,0 +1,16 @@
+XXXXXXXXXXXXXXXXXXXXXXXXXX
+XS.... ...X... ....X..X..X
+X... ... ..X.. ..X...X...X
+X..XX...XXX... ..XX.....XX
+X...XX.....XX...  ... ....X
+X.....X ....X.  ....X..X..X
+X... . ....X.... .... ..UX
+XXXXXXXXXXXXXXXXXXXXXXXXXX
+sep
+XXXXXXXXXXXXXXXXXXXXXXXXXX
+X..EX.....XX..X.....X....X
+X...X...X..... .X...  ...X
+X....X. .. ..XX ....X....X
+X.....X...X....XX.....X..X
+X....X.... XX..... .....XX
+XXXXXXXXXXXXXXXXXXXXXXXXXX
