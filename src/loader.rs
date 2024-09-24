@@ -290,9 +290,9 @@ fn separate_map(map: &str) -> Vec<&str> {
     map.split("sep\n").collect()
 }
 
-pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64)) {
+pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64)) {
     let mut mesh = Mesh::new([].into());
-    let mut start = (0., 0.);
+    let mut start = (0., 0., 0.);
     let mut colliders: Vec<BoxCollider> = vec![];
 
     for (level, map) in separate_map(map).iter().enumerate() {
@@ -327,36 +327,36 @@ pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64)) {
                             grid = grid + Mesh::new(Vec::from(WALL[5]));
                         }
 
-                        collider = Some(BoxCollider::new(WALL_COLLIDER[0], WALL_COLLIDER[1]));
+                        collider = Some(BoxCollider::new(WALL_COLLIDER[0], WALL_COLLIDER[1], None));
                     }
-
                     '.' => {
                         // add floor
                         // add lower section (roof)
                         grid = grid + Mesh::new(Vec::from(FLOOR[0]));
                         if level != 0 {
                             grid = grid + Mesh::new(Vec::from(FLOOR[1]));
-                            if x != 0 && row.chars().nth(x - 1) != Some('.') {
-                                // add left floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[2]));
-                            }
-                            if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
-                                // add right floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[3]));
-                            }
-                            if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
-                                // add front floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[4]));
-                            }
-                            if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
-                                // add back floor wall
-                                grid = grid + Mesh::new(Vec::from(FLOOR[5]));
-                            }
+                        }
+                        if x != 0 && row.chars().nth(x - 1) != Some('.') {
+                            // add left floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[2]));
+                        }
+                        if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
+                            // add right floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[3]));
+                        }
+                        if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
+                            // add front floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[4]));
+                        }
+                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
+                            // add back floor wall
+                            grid = grid + Mesh::new(Vec::from(FLOOR[5]));
                         }
 
                         // add collider to colliders
 
-                        collider = Some(BoxCollider::new(FLOOR_COLLIDER[0], FLOOR_COLLIDER[1]));
+                        collider =
+                            Some(BoxCollider::new(FLOOR_COLLIDER[0], FLOOR_COLLIDER[1], None));
                     }
 
                     ' ' => {
@@ -364,8 +364,14 @@ pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64)) {
                     }
 
                     'S' => {
-                        start = (z as f64 * GW + GW / 2., x as f64 * GW + GW / 2.);
-                        grid = Mesh::new(Vec::from(START))
+                        start = (
+                            z as f64 * GW + GW / 2.,
+                            -(level as f64 * GW + 5.),
+                            x as f64 * GW + GW / 2.,
+                        );
+                        grid = Mesh::new(Vec::from(START));
+                        collider =
+                            Some(BoxCollider::new(FLOOR_COLLIDER[0], FLOOR_COLLIDER[1], None));
                     }
 
                     'E' => grid = Mesh::new(Vec::from(END)),

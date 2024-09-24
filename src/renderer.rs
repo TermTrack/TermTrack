@@ -75,11 +75,15 @@ impl Screen {
                     col.x as u8, col.y as u8, col.z as u8
                 )
             }
-            buffer += "\r\n"
+            buffer += "\r\n";
         }
 
         //Move cursor home and print string buffer
         print!("\x1b[H{}", buffer);
+
+        let (w, h) = crossterm::terminal::size().unwrap();
+        self.w = w as usize;
+        self.h = h as usize - 1;
 
         // clear buffer
         self.buffer = vec![
