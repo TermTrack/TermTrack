@@ -1,12 +1,9 @@
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 
 use crate::loader::{self, load};
+use crate::renderer::{self, *};
 use crate::GW;
 use crate::{camera::Camera, mat::*};
-use crate::{
-    renderer::{self, *},
-    MAP,
-};
 use core::panic;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -23,11 +20,11 @@ const PLAYER_WIDTH: f64 = 1.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
 
 impl Game {
-    pub fn run(&mut self, map: (Mesh, Vec<BoxCollider>, (f64, f64, f64))) {
+    pub fn run(&mut self, map: (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)) {
         // load map files
         // generate map meshes
 
-        let (mesh, colliders, start) = map;
+        let (mesh, colliders, start, map_string) = map;
 
         self.camera.pos = Vec3 {
             x: start.0,
@@ -43,7 +40,7 @@ impl Game {
         // device for input
         let device_state = DeviceState::new();
 
-        let floors = renderer::map_as_vec_of_floors(MAP).len();
+        let floors = renderer::map_as_vec_of_floors(&map_string).len();
 
         loop {
             // reset timer
@@ -83,7 +80,7 @@ impl Game {
                 let time1 = time.elapsed();
                 time = Instant::now();
                 self.renderer
-                    .render_map(loader::MAP, self.camera.pos, loader::GW);
+                    .render_map(&map_string, self.camera.pos, loader::GW);
                 loop {
                     if device_state.get_keys().contains(&Keycode::M) {
                         if time.elapsed() < Duration::from_millis(150) {
