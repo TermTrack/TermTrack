@@ -23,11 +23,11 @@ const PLAYER_WIDTH: f64 = 1.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
 
 impl Game {
-    pub fn run(&mut self) -> Result<f64, &str> {
+    pub fn run(&mut self, map: (Mesh, Vec<BoxCollider>, (f64, f64, f64))) -> Result<f64, &str> {
         // load map files
         // generate map meshes
 
-        let (mesh, colliders, start) = load(loader::MAP);
+        let (mesh, colliders, start) = map;
 
         self.camera.pos = Vec3 {
             x: start.0,
@@ -174,7 +174,7 @@ impl Game {
             };
 
             if grounded && keys.contains(&Keycode::Space) {
-                self.camera.vel.y = -30.;
+                self.camera.vel.y = -40.;
             }
             self.camera.update_pos(dt);
             if self.camera.pos.y > GW * (floors + 1) as f64 {
