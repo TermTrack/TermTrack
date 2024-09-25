@@ -23,11 +23,11 @@ const PLAYER_WIDTH: f64 = 1.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
 
 impl Game {
-    pub fn run(&mut self) {
+    pub fn run(&mut self, map: (Mesh, Vec<BoxCollider>, (f64, f64, f64))) {
         // load map files
         // generate map meshes
 
-        let (mesh, colliders, start) = load(loader::MAP);
+        let (mesh, colliders, start) = map;
 
         self.camera.pos = Vec3 {
             x: start.0,

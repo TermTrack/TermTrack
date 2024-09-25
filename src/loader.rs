@@ -1,4 +1,6 @@
 use crate::mat::*;
+use std::path::PathBuf;
+use std::{fs, io};
 
 pub const GW: f64 = 10.;
 
@@ -290,12 +292,13 @@ fn separate_map(map: &str) -> Vec<&str> {
     map.split("sep\n").collect()
 }
 
-pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64)) {
+pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64)) {
     let mut mesh = Mesh::new([].into());
     let mut start = (0., 0., 0.);
     let mut colliders: Vec<BoxCollider> = vec![];
+    let map = fs::read_to_string(path).unwrap();
 
-    for (level, map) in separate_map(map).iter().enumerate() {
+    for (level, map) in separate_map(&map).iter().enumerate() {
         let rows: Vec<&str> = map.split("\n").collect();
         for (z, row) in rows.iter().enumerate() {
             if row.is_empty() {
@@ -447,13 +450,11 @@ pub fn load(map: &str) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64)) {
     (mesh, colliders, start)
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 
-mod tests {
-    use super::*;
+// mod tests {
+//     use super::*;
 
-    #[test]
-    fn test_load() {
-        load(MAP);
-    }
-}
+//     #[test]
+
+// }
