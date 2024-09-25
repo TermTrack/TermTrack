@@ -118,6 +118,77 @@ const WALL: [[(f64, f64, f64); 8]; 6] = [
 
 const WALL_COLLIDER: [(f64, f64, f64); 2] = [(0., GW, 0.), (GW, 0., GW)];
 
+const HALF_WALL: [[(f64, f64, f64); 8]; 6] = [
+    // top face
+    [
+        (0., 0.5 * GW, 0.),
+        (GW, 0.5 * GW, 0.),
+        (GW, 0.5 * GW, GW),
+        (102., 245., 66.),
+        (0., 0.5 * GW, 0.),
+        (0., 0.5 * GW, GW),
+        (GW, 0.5 * GW, GW),
+        (102., 245., 66.),
+    ],
+    // bottom face
+    [
+        (0., GW, 0.),
+        (GW, GW, 0.),
+        (GW, GW, GW),
+        (102., 245., 66.),
+        (0., GW, 0.),
+        (0., GW, GW),
+        (GW, GW, GW),
+        (102., 245., 66.),
+    ],
+    // front face
+    [
+        (0., 0.5 * GW, 0.),
+        (GW, 0.5 * GW, 0.),
+        (GW, GW, 0.),
+        (235., 52., 189.),
+        (0., 0.5 * GW, 0.),
+        (GW, GW, 0.),
+        (0., GW, 0.),
+        (235., 52., 189.),
+    ],
+    // back face
+    [
+        (0., 0.5 * GW, GW),
+        (GW, 0.5 * GW, GW),
+        (GW, GW, GW),
+        (235., 52., 189.),
+        (0., 0.5 * GW, GW),
+        (GW, GW, GW),
+        (0., GW, GW),
+        (235., 52., 189.),
+    ],
+    //left face
+    [
+        (0., 0.5 * GW, 0.),
+        (0., 0.5 * GW, GW),
+        (0., GW, 0.),
+        (235., 52., 189.),
+        (0., GW, 0.),
+        (0., GW, GW),
+        (0., 0.5 * GW, GW),
+        (235., 52., 189.),
+    ],
+    // right face
+    [
+        (GW, 0.5 * GW, 0.),
+        (GW, 0.5 * GW, GW),
+        (GW, GW, 0.),
+        (235., 52., 189.),
+        (GW, GW, 0.),
+        (GW, GW, GW),
+        (GW, 0.5 * GW, GW),
+        (235., 52., 189.),
+    ],
+];
+
+const HALF_WALL_COLLIDER: [(f64, f64, f64); 2] = [(0., GW, 0.), (GW, 0.5 * GW, GW)];
+
 const START: [(f64, f64, f64); 8 * 6] = [
     (0., GW * 0.9, 0.),
     (0., GW * 0.9, GW),
@@ -331,6 +402,34 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64)) {
                         }
 
                         collider = Some(BoxCollider::new(WALL_COLLIDER[0], WALL_COLLIDER[1], None));
+                    }
+                    'x' => {
+                        // Adding the visible face
+                        grid = grid + Mesh::new(Vec::from(HALF_WALL[0]));
+                        grid = grid + Mesh::new(Vec::from(HALF_WALL[1]));
+
+                        if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
+                            // add upper wall
+                            grid = grid + Mesh::new(Vec::from(HALF_WALL[2]));
+                        }
+                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
+                            // add bottom wall
+                            grid = grid + Mesh::new(Vec::from(HALF_WALL[3]));
+                        }
+                        if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
+                            // add left wall
+                            grid = grid + Mesh::new(Vec::from(HALF_WALL[4]));
+                        }
+                        if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
+                            // add right wall
+                            grid = grid + Mesh::new(Vec::from(HALF_WALL[5]));
+                        }
+
+                        collider = Some(BoxCollider::new(
+                            HALF_WALL_COLLIDER[0],
+                            HALF_WALL_COLLIDER[1],
+                            None,
+                        ));
                     }
                     '.' => {
                         // add floor

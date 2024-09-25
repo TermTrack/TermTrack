@@ -5,7 +5,7 @@ X. .. ...XX...X....X.....X
 XX..XX...  .X..... ...XX.X
 X...X.... XX....X..XX....X
 X....XX.. ..XX....XX.... X
-X.. ...X..XX...X.. .X....UX
+X.. ...X..XX...X.. .X....xX
 XXXXXXXXXXXXXXXXXXXXXXXXXX
 sep
 XXXXXXXXXXXXXXXXXXXXXXXXXX

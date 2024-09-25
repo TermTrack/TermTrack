@@ -5,7 +5,7 @@ X. ..XX.....X.. ..XX......X
 XX.....X. ..X.....XXX..X..X
 X....X..X...XX...XX...X. .X
 X...XX...XX ..XX...XXX....X
-X.......X....X....X..X..U.X
+X.......X....X....X..X..x.X
 XXXXXXXXXXXXXXXXXXXXXXXXXX
 sep
 XXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -19,5 +19,5 @@ sep
 XXXXXXXXXXXXXXXXXXXXXXXXXX
 X... ...XX..X....X...X....X
 X. ...XX.....X.... ..XX...X
-X...X...XX....X..... ....DX
+X...X...XX....X..... .... X
 XXXXXXXXXXXXXXXXXXXXXXXXXX
