@@ -30,5 +30,11 @@ fn main() {
             },
         },
     };
-    game.run()
+    match game.run() {
+        Ok(time) => println!("You won!!!, your time is: {time}"),
+        Err(e) => match e {
+            "death" => println!("You died! try again"),
+            _ => println!("you failed!"),
+        },
+    }
 }

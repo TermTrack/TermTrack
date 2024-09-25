@@ -316,11 +316,15 @@ pub fn check_collision(
         y: 0.,
         z: 0.,
     });
+
+    let mut t = None;
+
     for collider in colliders.iter() {
         // checking for collision in x and fixing position
         if next_pc.intersects(collider) {
             if let Some(tag) = collider.tag {
-                return Some(tag);
+                t = Some(tag);
+                println!("{tag}");
             }
             // calculate collided distance, set position to not colliding & delete velocity in x direction
             if dir.x < 0. {
@@ -343,7 +347,8 @@ pub fn check_collision(
         // checking for collision in x and fixing position
         if next_pc.intersects(collider) {
             if let Some(tag) = collider.tag {
-                return Some(tag);
+                t = Some(tag);
+                println!("{tag}");
             }
             // calculate collided distance, set position to not colliding & delete velocity in x direction
             if dir.y < 0. {
@@ -367,7 +372,8 @@ pub fn check_collision(
         // checking for collision in x and fixing position
         if next_pc.intersects(collider) {
             if let Some(tag) = collider.tag {
-                return Some(tag);
+                t = Some(tag);
+                println!("{tag}");
             }
             // calculate collided distance, set position to not colliding & delete velocity in x direction
             if dir.z < 0. {
@@ -382,5 +388,5 @@ pub fn check_collision(
         }
     }
 
-    None
+    t
 }

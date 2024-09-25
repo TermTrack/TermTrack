@@ -23,7 +23,7 @@ const PLAYER_WIDTH: f64 = 1.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
 
 impl Game {
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<f64, &str> {
         // load map files
         // generate map meshes
 
@@ -158,84 +158,28 @@ impl Game {
             // collision
             let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1, None);
             let mut grounded = false;
-            check_collision(
+            if let Some(tag) = check_collision(
                 &mut current_pc,
                 &mut self.camera.pos,
                 &mut self.camera.vel,
                 dt,
                 &colliders,
                 &mut grounded,
-            );
+            ) {
+                return match tag {
+                    "goal" => Ok(level_timer.elapsed().as_secs_f64()),
+                    "death" => Err("death"),
+                    t => panic!("unkown collider-tag: {t}"),
+                };
+            };
 
             if grounded && keys.contains(&Keycode::Space) {
-                self.camera.vel.y = -40.;
+                self.camera.vel.y = -30.;
             }
-            // // get current player collider & translate it to position + velocity vector
-            // current_pc.translate(self.camera.pos);
-
-            // for collider in colliders.iter() {
-            //     // temporary variable for imagining next position
-            //     let mut next_pc = current_pc.clone();
-
-            //     // adding x distance to next_pc
-            //     next_pc.translate(Vec3 {
-            //         x: self.camera.vel.x * dt,
-            //         y: 0.,
-            //         z: 0.,
-            //     });
-
-            //     // adding z distance to next_pc
-            //     next_pc.translate(Vec3 {
-            //         x: 0.,
-            //         y: 0.,
-            //         z: self.camera.vel.z * dt,
-            //     });
-
-            //     // checking for collision in z and fixing position
-            //     if next_pc.intersects(collider) {
-            //         // calculate collided distance, set position to not colliding & delete velocity in z direction
-            //         if dir.z < 0. {
-            //             self.camera.pos.z +=
-            //                 (collider.max_z - next_pc.min_z) + self.camera.vel.z * dt;
-            //         } else if dir.z > 0. {
-            //             self.camera.pos.z +=
-            //                 (collider.min_z - next_pc.max_z) + self.camera.vel.z * dt;
-            //         }
-            //         self.camera.vel.z = 0.;
-            //         current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
-            //         current_pc.translate(self.camera.pos);
-            //         continue;
-            //     }
-
-            //     // adding y distance to next_pc
-            // next_pc.translate(Vec3 {
-            //     x: 0.,
-            //     y: self.camera.vel.y * dt,
-            //     z: 0.,
-            // });
-
-            // checking for collision in y and fixing position
-            // if next_pc.intersects(collider) {
-            //     // calculate collided distance, set position to not colliding & delete velocity in y direction
-            //     if dir.y < 0. {
-            //         self.camera.pos.y +=
-            //             (collider.max_y - next_pc.min_y) + self.camera.vel.y * dt;
-            //         self.camera.vel.y = 0.;
-            //     } else if dir.y > 0. {
-            //         self.camera.pos.y +=
-            //             (collider.min_y - next_pc.max_y) + self.camera.vel.y * dt;
-            //         self.camera.vel.y = 0.;
-            // if keys.contains(&Keycode::Space) && self.camera.vel.y >= 0. {
-            //     self.camera.vel.y = -40.;
-            //             }
-            //         }
-            //         current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1);
-            //         current_pc.translate(self.camera.pos);
-            //         continue;
-            //     }
-            // }
-
             self.camera.update_pos(dt);
+            if self.camera.pos.y > GW * (floors + 1) as f64 {
+                return Err("death");
+            }
         }
     }
 }
