@@ -139,6 +139,20 @@ fn main() {
                 },
             },
         };
-        game.run(map)
+        match game.run(map) {
+            Ok(time) => finish(time),
+            Err(e) => match e {
+                "death" => game_over("You died! try again"),
+                _ => game_over("you failed!"),
+            },
+        }
     }
+}
+
+fn game_over(arg: &str) {
+    todo!()
+}
+
+fn finish(time: f64) {
+    todo!()
 }
