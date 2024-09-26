@@ -2,8 +2,8 @@ use crate::mat::*;
 use std::path::PathBuf;
 use std::{fs, io};
 
-pub const GW: f64 = 15.;
-pub const GH: f64 = 30.;
+pub const GW: f64 = 10.;
+pub const GH: f64 = 20.;
 
 // pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
 // XS.......X...............X
@@ -194,51 +194,51 @@ const START: [(f64, f64, f64); 8 * 6] = [
     (0., GH * 0.9, 0.),
     (0., GH * 0.9, GW),
     (GW, GH * 0.9, 0.),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (GW, GH * 0.9, 0.),
     (0., GH * 0.9, GW),
     (GW, GH * 0.9, GW),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (0., GH, 0.),
     (0., GH, GW),
     (GW, GH, 0.),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (GW, GH, 0.),
     (0., GH, GW),
     (GW, GH, GW),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (0., GH, 0.),
     (0., GH, GW),
     (0., GH * 0.9, 0.),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (0., GH * 0.9, 0.),
     (0., GH * 0.9, GW),
     (0., GH, GW),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (GW, GH, 0.),
     (GW, GH, GW),
     (GW, GH * 0.9, 0.),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (GW, GH * 0.9, 0.),
     (GW, GH * 0.9, GW),
     (GW, GH, GW),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (0., GH, 0.),
     (GW, GH, 0.),
     (GW, GH * 0.9, 0.),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (0., GH, 0.),
     (0., GH * 0.9, 0.),
     (GW, GH * 0.9, 0.),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (0., GH, GW),
     (GW, GH, GW),
     (GW, GH * 0.9, GW),
-    (207., 172., 85.),
+    (68., 218., 235.),
     (0., GH, GW),
     (0., GH * 0.9, GW),
     (GW, GH * 0.9, GW),
-    (207., 172., 85.),
+    (68., 218., 235.),
 ];
 
 const FLOOR_COLLIDER: [(f64, f64, f64); 2] = [(0., GH, 0.), (GW, GH * 0.9, GW)];
@@ -361,8 +361,8 @@ const END: [(f64, f64, f64); 8 * 6] = [
 ];
 
 const GOAL_COLLIDER: [(f64, f64, f64); 2] = [
-    (GW * 0.1, GW * 0.9, GW * 0.1),
-    (GW * 0.9, GW * 0.1, GW * 0.9),
+    (GW * 0.1, GH * 0.9, GW * 0.1),
+    (GW * 0.9, GH * 0.1, GW * 0.9),
 ];
 
 fn separate_map(map: &str) -> Vec<&str> {
@@ -374,6 +374,7 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
     let mut start = (0., 0., 0.);
     let mut colliders: Vec<BoxCollider> = vec![];
     let map = fs::read_to_string(path).unwrap();
+    let floors = separate_map(&map).len();
 
     for (level, map) in separate_map(&map).iter().enumerate() {
         let rows: Vec<&str> = map.split("\n").collect();
@@ -481,7 +482,7 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
                     'S' => {
                         start = (
                             z as f64 * GW + GW / 2.,
-                            -(level as f64 * GW + 5.),
+                            level as f64 * GH + GH * 0.5,
                             x as f64 * GW + GW / 2.,
                         );
                         grid = Mesh::new(Vec::from(START));
@@ -515,19 +516,19 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
                         + Vec3 {
                             x: (x as f64) * GW,
                             z: (z as f64) * GW,
-                            y: -(level as f64) * GW,
+                            y: -(level as f64) * GH,
                         };
                     tri.v1 = tri.v1
                         + Vec3 {
                             x: (x as f64) * GW,
                             z: (z as f64) * GW,
-                            y: -(level as f64) * GW,
+                            y: -(level as f64) * GH,
                         };
                     tri.v2 = tri.v2
                         + Vec3 {
                             x: (x as f64) * GW,
                             z: (z as f64) * GW,
-                            y: -(level as f64) * GW,
+                            y: -(level as f64) * GH,
                         };
                 }
 
@@ -538,7 +539,7 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
                     collider.translate(Vec3 {
                         x: (x as f64) * GW,
                         z: (z as f64) * GW,
-                        y: -(level as f64) * GW,
+                        y: -(level as f64) * GH,
                     });
                     colliders.push(collider.clone())
                 }

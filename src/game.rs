@@ -2,6 +2,7 @@ use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 
 use crate::loader::{self, load};
 use crate::renderer::{self, *};
+use crate::GH;
 use crate::GW;
 use crate::{camera::Camera, mat::*};
 use core::panic;
@@ -56,7 +57,7 @@ impl Game {
             let timer_text = &format!("time: {:.1?} ", level_timer.elapsed());
             let floor_text = &format!(
                 "floor: {}/{}",
-                (-self.camera.pos.y.div_euclid(GW)).clamp(0., floors as f64) as usize,
+                (-self.camera.pos.y.div_euclid(GH)).clamp(0., floors as f64) as usize,
                 floors
             );
 
