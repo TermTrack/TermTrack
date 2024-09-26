@@ -1,5 +1,9 @@
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
+use rodio::OutputStreamHandle;
 
+use rodio::{source::Source, Decoder, OutputStream};
+
+use crate::audio;
 use crate::loader::{self, load};
 use crate::renderer::{self, *};
 use crate::GH;
@@ -24,6 +28,7 @@ impl Game {
     pub fn run(
         &mut self,
         map: (Mesh, Vec<BoxCollider>, (f64, f64, f64), String),
+        audio_handle: &OutputStreamHandle,
     ) -> Result<f64, &str> {
         // load map files
         // generate map meshes
@@ -45,6 +50,10 @@ impl Game {
         let device_state = DeviceState::new();
 
         let floors = renderer::map_as_vec_of_floors(&map_string).len();
+
+        // Get an output stream handle to the default physical sound device
+        let (_stream, background_audio_handle) = OutputStream::try_default().unwrap();
+        audio::play_audio(&background_audio_handle, "./sounds/background.mp3");
 
         loop {
             // reset timer
@@ -174,8 +183,10 @@ impl Game {
                 };
             };
 
+            // jump
             if grounded && keys.contains(&Keycode::Space) {
                 self.camera.vel.y = -40.;
+                audio::play_audio(audio_handle, "./sounds/jump.mp3");
             }
             self.camera.update_pos(dt);
             if self.camera.pos.y > GW * (floors + 1) as f64 {

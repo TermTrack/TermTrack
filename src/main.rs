@@ -2,12 +2,16 @@ use device_query::{self, DeviceQuery, DeviceState, Keycode};
 use loader::*;
 use mat::Vec3;
 use renderer::Screen;
+use rodio::{source::Source, Decoder, OutputStream};
 use std::env;
 use std::ffi::OsStr;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::thread;
 use std::{fs, io};
 
+mod audio;
 mod camera;
 mod game;
 mod loader;
@@ -114,6 +118,8 @@ fn main() {
     let level_dir = env::args().collect::<Vec<String>>()[1].clone();
     let entries = fs::read_dir(level_dir).unwrap();
     let levels: Vec<PathBuf> = entries.map(|e| e.unwrap().path()).collect();
+    // Get an output stream handle to the default physical sound device
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     loop {
         let chosen_level = menu(levels.clone());
         let map = loader::load(&levels[chosen_level]);
@@ -139,7 +145,7 @@ fn main() {
                 },
             },
         };
-        match game.run(map) {
+        match game.run(map, &stream_handle) {
             Ok(time) => finish(time),
             Err(e) => match e {
                 "death" => game_over("You died! try again"),

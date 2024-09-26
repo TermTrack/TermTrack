@@ -377,7 +377,7 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
     let floors = separate_map(&map).len();
 
     for (level, map) in separate_map(&map).iter().enumerate() {
-        let rows: Vec<&str> = map.split("\n").collect();
+        let rows: Vec<&str> = map.split("\n").map(|x| x.trim()).collect();
         for (z, row) in rows.iter().enumerate() {
             if row.is_empty() {
                 continue;
@@ -507,7 +507,7 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
                         ))
                     }
 
-                    _ => panic!("bad map"),
+                    c => panic!("bad map, {c}",),
                 }
 
                 // Translating grid to position
