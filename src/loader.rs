@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::{fs, io};
 
 pub const GW: f64 = 10.;
-pub const GH: f64 = 20.;
+pub const GH: f64 = 15.;
 
 // pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
 // XS.......X...............X

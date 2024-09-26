@@ -16,7 +16,7 @@ pub struct Game {
 
 const SPEED: f64 = 50.;
 const ROTATION_SPEED: f64 = 1.5;
-const GRAVITY: f64 = 80.;
+const GRAVITY: f64 = 140.;
 const PLAYER_WIDTH: f64 = 1.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
 

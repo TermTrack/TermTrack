@@ -46,7 +46,11 @@ fn main() {
         };
         loop {
             match game.run(map.clone()) {
-                Ok(time) => screens::finish(time),
+                Ok(time) => {
+                    if screens::finish(time) {
+                        continue;
+                    }
+                }
                 Err(e) => match e {
                     "death" => {
                         if screens::game_over("You died!") {

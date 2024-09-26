@@ -235,6 +235,113 @@ pub fn game_over(arg: &str) -> bool {
     }
 }
 
-pub fn finish(time: f64) {
-    todo!()
+pub fn finish(time: f64) -> bool {
+    let device_state = DeviceState::new();
+    let (screen_width, screen_height) = crossterm::terminal::size().unwrap();
+    let mut box_height = 5;
+    let box_width = 30;
+
+    let start_x = screen_width / 2 - box_width / 2;
+    let start_y = screen_height / 2 - box_height / 2;
+    let mut try_again = true;
+
+    loop {
+        // print background image
+        print!("{esc}[48;2;105;105;105m", esc = 27 as char);
+        for row in 0..=screen_height {
+            print!(
+                "{}",
+                std::iter::repeat(" ")
+                    .take(screen_width as usize)
+                    .collect::<String>()
+            )
+        }
+
+        // print menu
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
+        println!(
+            "{esc}[{};{}H*{:-^3$}*",
+            start_y,
+            start_x,
+            "",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        println!(
+            "{esc}[{};{}H|{:^3$}|",
+            start_y + 1,
+            start_x,
+            "You Won!",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        println!(
+            "{esc}[{};{}H|{:^3$}|",
+            start_y + 2,
+            start_x,
+            format!("time: {:.2}s", time),
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        println!(
+            "{esc}[{};{}H|{: ^3$}|",
+            start_y + 3,
+            start_x,
+            "try again?",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        if try_again {
+            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+        }
+        println!(
+            "{esc}[{};{}H|{: ^3$}|",
+            start_y + 4,
+            start_x,
+            "YES",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
+        if !try_again {
+            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+        }
+        println!(
+            "{esc}[{};{}H|{: ^3$}|",
+            start_y + 5,
+            start_x,
+            "NO",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
+        println!(
+            "{esc}[{};{}H*{:-^3$}*",
+            start_y + 6,
+            start_x,
+            "",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+
+        thread::sleep_ms(200);
+
+        //match input
+        loop {
+            let keys = device_state.get_keys();
+
+            if keys.contains(&Keycode::Down) {
+                try_again = !try_again;
+                break;
+            }
+            if keys.contains(&Keycode::Up) {
+                try_again = !try_again;
+                break;
+            }
+            if keys.contains(&Keycode::Enter) {
+                return try_again;
+            }
+        }
+    }
 }
