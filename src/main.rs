@@ -26,7 +26,7 @@ fn main() {
     // Get an output stream handle to the default physical sound device
     let (_stream, stream_handle) = OutputStream::try_default().expect("couldnt get sound handle!");
     loop {
-        let chosen_level = screens::menu(levels.clone());
+        let chosen_level = screens::menu(levels.clone(), &stream_handle);
         let map = loader::load(&levels[chosen_level]);
 
         let mut game = game::Game {

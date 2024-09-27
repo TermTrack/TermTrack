@@ -2,7 +2,11 @@ use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
 use crossterm;
 use device_query::{DeviceQuery, DeviceState, Keycode};
+use rodio::OutputStreamHandle;
+use rodio::{source::Source, Decoder, OutputStream};
 use serde_json::{json, Value};
+
+use crate::audio;
 
 use crate::renderer;
 
@@ -79,7 +83,7 @@ $$$$$$$$/ $$$$$$$$/ $$$$$$$  |$$  \   /$$ |$$$$$$$$/ $$$$$$$  |/$$$$$$  |/$$$$$$
    $$ |   $$       |$$ |  $$ |$$ | $/  $$ |   $$ |   $$ |  $$ |$$ |  $$ |$$    $$/ $$ | $$  |
    $$/    $$$$$$$$/ $$/   $$/ $$/      $$/    $$/    $$/   $$/ $$/   $$/  $$$$$$/  $$/   $$/ "#;
 
-pub fn menu(levels: Vec<PathBuf>) -> usize {
+pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     let device_state = DeviceState::new();
     let mut chosen_level = 0;
     let level_names: Vec<&OsStr> = levels
@@ -97,6 +101,9 @@ pub fn menu(levels: Vec<PathBuf>) -> usize {
 
     let start_x = screen_width / 2 - box_width / 2;
     let start_y = screen_height / 2 - box_height / 2;
+
+    let (_stream, background_audio_handle) = OutputStream::try_default().unwrap();
+    audio::play_audio(&background_audio_handle, "./sounds/menu.mp3");
 
     loop {
         // print background image
@@ -172,6 +179,9 @@ pub fn menu(levels: Vec<PathBuf>) -> usize {
             }
             if keys.contains(&Keycode::Enter) {
                 return chosen_level as usize;
+            }
+            if keys.contains(&Keycode::E) {
+                panic!("exited app");
             }
         }
     }

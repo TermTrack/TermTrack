@@ -84,6 +84,15 @@ impl Game {
                 true,
             );
 
+            // play walking sound
+
+            // play random footsteps
+
+            // if random == 50 && play != true {
+            //     audio::walk(audio_handle, "./sounds/walking.mp3");
+            //     play = true;
+            // }
+
             // handle input
             let mouse = device_state.get_mouse();
             let keys = device_state.get_keys();
