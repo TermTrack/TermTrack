@@ -2,7 +2,14 @@ use crate::{camera::Camera, mat::*};
 use crossterm;
 use rayon::prelude::*;
 
-pub const RENDER_DIST: f64 = 50.;
+pub const RENDER_DIST: f64 = 35.;
+
+pub fn get_terminal_size() -> (usize, usize) {
+    let (w, h) = crossterm::terminal::size().unwrap();
+    let w = (w as usize).min(200);
+    let h = (h as usize).min(75);
+    (w, h)
+}
 
 pub struct Screen {
     pub w: usize,
@@ -13,19 +20,14 @@ pub struct Screen {
 
 impl Screen {
     pub fn new() -> Self {
-        let (w, h) = crossterm::terminal::size().unwrap();
+        let (w, h) = get_terminal_size();
         let raw = crossterm::terminal::enable_raw_mode().unwrap();
         let mut stdout = std::io::stdout();
-        crossterm::execute!(
-            stdout,
-            crossterm::terminal::EnterAlternateScreen,
-            crossterm::cursor::Hide
-        )
-        .unwrap();
+        crossterm::execute!(stdout, crossterm::cursor::Hide).unwrap();
         let h = h - 1;
 
         //clear screen
-        print!("\x1b[2J");
+        print!("\x1b[2J\x1b[H\r");
 
         let buffer = vec![
             vec![
@@ -81,7 +83,7 @@ impl Screen {
         //Move cursor home and print string buffer
         print!("\x1b[H{}", buffer);
 
-        let (w, h) = crossterm::terminal::size().unwrap();
+        let (w, h) = get_terminal_size();
         self.w = w as usize;
         self.h = h as usize - 1;
 
@@ -140,6 +142,36 @@ impl Screen {
             self.flush(false);
             self.print_info(camera, extra)
         }
+    }
+
+    pub fn render_pruned_mt(&mut self, camera: &Camera, mesh: &Mesh, extra: &str, print: bool) {
+        let mut pruned_tris = Vec::with_capacity(mesh.tris().len());
+        let forward = Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 1.,
+        }
+        .rotate(camera.rotation);
+        for tri in mesh.tris() {
+            let mut valid = false;
+            for p in [tri.v0, tri.v1, tri.v2] {
+                // vector from pos to vertex
+                let v = p - camera.pos;
+                if v.abs() < RENDER_DIST {
+                    valid = true;
+                    break;
+                }
+                if v.dot(forward) >= 0. {
+                    valid = true;
+                    break;
+                }
+            }
+            if valid {
+                pruned_tris.push(tri);
+            }
+        }
+        let pruned_mesh = Mesh { tris: pruned_tris };
+        self.render_mt(&camera, &pruned_mesh, extra, print);
     }
 
     pub fn render_mt(&mut self, camera: &Camera, mesh: &Mesh, extra: &str, print: bool) {

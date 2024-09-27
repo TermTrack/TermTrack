@@ -373,7 +373,7 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
     let mut mesh = Mesh::new([].into());
     let mut start = (0., 0., 0.);
     let mut colliders: Vec<BoxCollider> = vec![];
-    let map = fs::read_to_string(path).unwrap();
+    let map = fs::read_to_string(path).expect("couldn't read level");
     let floors = separate_map(&map).len();
 
     for (level, map) in separate_map(&map).iter().enumerate() {
