@@ -21,7 +21,6 @@ pub struct Game {
 const SPEED: f64 = 50.;
 const ROTATION_SPEED: f64 = 1.5;
 const GRAVITY: f64 = 140.;
-const PLAYER_WIDTH: f64 = 1.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
 
 impl Game {
@@ -77,6 +76,15 @@ impl Game {
                 &format!("{}{}{}", fps_text, timer_text, floor_text),
                 true,
             );
+
+            // play walking sound
+
+            // play random footsteps
+
+            // if random == 50 && play != true {
+            //     audio::walk(audio_handle, "./sounds/walking.mp3");
+            //     play = true;
+            // }
 
             // handle input
             let mouse = device_state.get_mouse();
