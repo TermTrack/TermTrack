@@ -3,11 +3,11 @@ use rodio::OutputStreamHandle;
 
 use rodio::{source::Source, Decoder, OutputStream};
 
-use crate::audio;
 use crate::loader::{self, load};
 use crate::renderer::{self, *};
 use crate::GH;
 use crate::GW;
+use crate::{audio, LevelMap};
 use crate::{camera::Camera, mat::*};
 use core::panic;
 use std::thread;
@@ -27,13 +27,19 @@ const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 4.5, -1.), (1
 impl Game {
     pub fn run(
         &mut self,
-        map: (Mesh, Vec<BoxCollider>, (f64, f64, f64), String),
+        map: loader::LevelMap,
         audio_handle: &OutputStreamHandle,
     ) -> Result<f64, &str> {
         // load map files
         // generate map meshes
 
-        let (mesh, colliders, start, map_string) = map;
+        let LevelMap {
+            mesh,
+            colliders,
+            start_pos: start,
+            map_string,
+            level_name,
+        } = map;
 
         self.camera.pos = Vec3 {
             x: start.0,

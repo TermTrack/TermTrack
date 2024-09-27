@@ -5,6 +5,15 @@ use std::{fs, io};
 pub const GW: f64 = 10.;
 pub const GH: f64 = 15.;
 
+#[derive(Clone)]
+pub struct LevelMap {
+    pub mesh: Mesh,
+    pub colliders: Vec<BoxCollider>,
+    pub start_pos: (f64, f64, f64),
+    pub map_string: String,
+    pub level_name: String,
+}
+
 // pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
 // XS.......X...............X
 // X........................X
@@ -369,12 +378,13 @@ fn separate_map(map: &str) -> Vec<&str> {
     map.split("sep\n").collect()
 }
 
-pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String) {
+pub fn load(path: &PathBuf) -> LevelMap {
     let mut mesh = Mesh::new([].into());
     let mut start = (0., 0., 0.);
     let mut colliders: Vec<BoxCollider> = vec![];
     let map = fs::read_to_string(path).expect("couldn't read level");
     let floors = separate_map(&map).len();
+    let level_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
 
     for (level, map) in separate_map(&map).iter().enumerate() {
         let rows: Vec<&str> = map.split("\n").map(|x| x.trim()).collect();
@@ -546,7 +556,13 @@ pub fn load(path: &PathBuf) -> (Mesh, Vec<BoxCollider>, (f64, f64, f64), String)
             }
         }
     }
-    (mesh, colliders, start, map)
+    LevelMap {
+        mesh,
+        colliders,
+        start_pos: start,
+        map_string: map,
+        level_name,
+    }
 }
 
 // #[cfg(test)]
