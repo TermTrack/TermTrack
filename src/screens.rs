@@ -3,6 +3,8 @@ use std::{ffi::OsStr, path::PathBuf, thread};
 use crossterm;
 use device_query::{DeviceQuery, DeviceState, Keycode};
 
+use crate::renderer;
+
 const title_l: &str = r#"                   ___           ___           ___                       ___           ___           ___           ___     
       ___        /  /\         /  /\         /__/\          ___        /  /\         /  /\         /  /\         /__/|    
      /  /\      /  /:/_       /  /::\       |  |::\        /  /\      /  /::\       /  /::\       /  /:/        |  |:|    
@@ -43,7 +45,9 @@ pub fn menu(levels: Vec<PathBuf>) -> usize {
         .iter()
         .map(|path| path.file_stem().unwrap())
         .collect();
-    let (screen_width, screen_height) = crossterm::terminal::size().unwrap();
+    let (screen_width, screen_height) = renderer::get_terminal_size();
+    let screen_width = screen_width as u16;
+    let screen_height = screen_height as u16;
     let box_width: u16 = 30;
     let mut box_height = 7;
     if levels.len() < 7 {
@@ -55,7 +59,7 @@ pub fn menu(levels: Vec<PathBuf>) -> usize {
 
     loop {
         // print background image
-        print!("{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
         for row in 0..=screen_height {
             print!(
                 "{}",
@@ -134,7 +138,10 @@ pub fn menu(levels: Vec<PathBuf>) -> usize {
 
 pub fn game_over(arg: &str) -> bool {
     let device_state = DeviceState::new();
-    let (screen_width, screen_height) = crossterm::terminal::size().unwrap();
+    let (screen_width, screen_height) = renderer::get_terminal_size();
+    let screen_width = screen_width as u16;
+    let screen_height = screen_height as u16;
+
     let box_width: u16 = 30.max(arg.len() as u16);
     let mut box_height = 5;
 
@@ -237,7 +244,9 @@ pub fn game_over(arg: &str) -> bool {
 
 pub fn finish(time: f64) -> bool {
     let device_state = DeviceState::new();
-    let (screen_width, screen_height) = crossterm::terminal::size().unwrap();
+    let (screen_width, screen_height) = renderer::get_terminal_size();
+    let screen_width = screen_width as u16;
+    let screen_height = screen_height as u16;
     let mut box_height = 5;
     let box_width = 30;
 

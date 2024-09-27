@@ -18,11 +18,11 @@ pub struct Game {
     pub camera: Camera,
 }
 
-const SPEED: f64 = 50.;
-const ROTATION_SPEED: f64 = 1.5;
-const GRAVITY: f64 = 140.;
-const PLAYER_WIDTH: f64 = 1.;
-const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 6., -1.), (1., -2., 1.));
+const SPEED: f64 = 25.;
+const JUMP_SPEED: f64 = 40.;
+const ROTATION_SPEED: f64 = 2.5;
+const GRAVITY: f64 = 90.;
+const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 4.5, -1.), (1., -1., 1.));
 
 impl Game {
     pub fn run(
@@ -71,7 +71,7 @@ impl Game {
             );
 
             // render vertices
-            self.renderer.render_mt(
+            self.renderer.render_pruned_mt(
                 &self.camera,
                 &mesh,
                 &format!("{}{}{}", fps_text, timer_text, floor_text),
@@ -185,7 +185,7 @@ impl Game {
 
             // jump
             if grounded && keys.contains(&Keycode::Space) {
-                self.camera.vel.y = -40.;
+                self.camera.vel.y = -JUMP_SPEED;
                 audio::play_audio(audio_handle, "./sounds/jump.mp3");
             }
             self.camera.update_pos(dt);
