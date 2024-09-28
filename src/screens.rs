@@ -83,6 +83,172 @@ $$$$$$$$/ $$$$$$$$/ $$$$$$$  |$$  \   /$$ |$$$$$$$$/ $$$$$$$  |/$$$$$$  |/$$$$$$
    $$ |   $$       |$$ |  $$ |$$ | $/  $$ |   $$ |   $$ |  $$ |$$ |  $$ |$$    $$/ $$ | $$  |
    $$/    $$$$$$$$/ $$/   $$/ $$/      $$/    $$/    $$/   $$/ $$/   $$/  $$$$$$/  $$/   $$/ "#; // min 130
 
+pub fn menu_print() {
+    let (screen_width, screen_height) = renderer::get_terminal_size();
+    let screen_width = screen_width as u16;
+    let screen_height = screen_height as u16;
+    let message = vec![
+        "Use |\u{1F845} | and |\u{1F847} | to navigate menu.",
+        "Press enter to play.\n",
+        " ",
+        "How to win:",
+        "Find the end.",
+    ];
+    // print background image
+    print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
+    for row in 0..=screen_height {
+        println!(
+            "{}\r",
+            std::iter::repeat(" ")
+                .take(screen_width as usize)
+                .collect::<String>()
+        )
+    }
+
+    let (title, gap) = match screen_width {
+        125..=u16::MAX => (TITLE_L, 2),
+        95..125 => (TITLE_M, 2),
+        59..95 => (TITLE_S, 1),
+        45..59 => (TITLE_XS, 1),
+        0..45 => ("", 0),
+    };
+
+    if title == "" {
+        panic!("please expand your terminal and try again.");
+    };
+
+    // print title
+    let lines: Vec<&str> = title.split("\n").collect();
+    let menu_width = lines[1].len() as u16;
+    let mut y: u16 = 0;
+    let x = screen_width / 2 - menu_width / 2;
+    y += gap;
+    for line in &lines {
+        println!(
+            "{esc}[{};{}H{}",
+            y,
+            screen_width / 2 - (line.len() as u16) / 2,
+            line,
+            esc = 27 as char
+        );
+        y += 1;
+    }
+
+    // print controls
+
+    y += gap;
+    println!(
+        "{esc}[{};{}H{:-^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "",
+        menu_width as usize,
+        esc = 27 as char
+    );
+    y += 1;
+
+    if title == TITLE_L {
+        println!(
+        "{esc}[{};{}H{:^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "|W| |A| |S| |D| - move   |\u{1F844} | |\u{1F845} | |\u{1F847} | |\u{1F846} | - rotate camera   | [SPACEBAR] | - jump   |M| - view map   |E| - exit",
+        menu_width as usize,
+        esc = 27 as char
+    );
+    } else if title == TITLE_M {
+        println!(
+        "{esc}[{};{}H{:^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "|W| |A| |S| |D| - move   |\u{1F844} | |\u{1F845} | |\u{1F847} | |\u{1F846} | - rotate camera   | [SPACEBAR] | - jump",
+        menu_width as usize,
+        esc = 27 as char
+    );
+        y += 1;
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "|M| - view map   |E| - exit",
+            menu_width as usize,
+            esc = 27 as char
+        );
+    } else if title == TITLE_S {
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "WASD - move | \u{1F844} \u{1F845} \u{1F847} \u{1F846}  - rotate camera | [SPACE] - jump",
+            menu_width as usize,
+            esc = 27 as char
+        );
+        y += 1;
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "M - map | E - exit",
+            menu_width as usize,
+            esc = 27 as char
+        );
+    } else if title == TITLE_XS {
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "WASD - move | \u{1F844} \u{1F845} \u{1F847} \u{1F846}  - rotate camera",
+            menu_width as usize,
+            esc = 27 as char
+        );
+        y += 1;
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "[SPACE] - jump | M - map | E - exit",
+            menu_width as usize,
+            esc = 27 as char
+        );
+    }
+
+    y += 1;
+    println!(
+        "{esc}[{};{}H{:-^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "",
+        menu_width as usize,
+        esc = 27 as char
+    );
+
+    // print instructions
+    y += gap;
+    let mut chopped_message = vec![];
+    for line in message {
+        let mut chopped_line = line
+            .chars()
+            .collect::<Vec<char>>()
+            .chunks(menu_width as usize / 2 - gap as usize)
+            .map(|c| c.iter().collect::<String>())
+            .collect::<Vec<String>>();
+
+        chopped_message.append(&mut chopped_line);
+    }
+
+    for (n, line) in chopped_message.iter().enumerate() {
+        println!(
+            "{esc}[{};{}H{}",
+            y + n as u16,
+            screen_width / 2 + gap,
+            line,
+            esc = 27 as char
+        );
+    }
+
+    let box_width: u16 = menu_width / 2 - 2;
+}
+
 pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     let device_state = DeviceState::new();
     let mut chosen_level = 0;
@@ -290,11 +456,16 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             if i == chosen_level {
                 print!("{esc}[48;2;46;46;46m", esc = 27 as char);
             }
+
+            let mut level_name = level_names[i as usize].to_str().unwrap().to_string();
+            if level_name.len() > box_width as usize - 2 {
+                level_name = level_name[0..(box_width as usize - 5)].to_string() + "...";
+            }
             println!(
                 "{esc}[{};{}H|{:^3$}|",
                 y + 1 + (i - lowest),
                 x,
-                level_names[i as usize].to_str().unwrap(),
+                level_name,
                 (box_width - 2) as usize,
                 esc = 27 as char
             );
@@ -320,7 +491,6 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             if keys.contains(&Keycode::Down) {
                 if chosen_level != level_names.len() as u16 - 1 {
                     chosen_level += 1;
-                    //chosen_level = chosen_level.min(level_names.len() as u16 - 1);
                     audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                     break;
                 }
@@ -333,10 +503,15 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
                 }
             }
             if keys.contains(&Keycode::Enter) {
+                // audio::play_audio(&audio_handle, "./sounds/enter.mp3");
+                // thread::sleep_ms(800);
+
                 return chosen_level as usize;
             }
             if keys.contains(&Keycode::E) {
                 screens::exit();
+                menu_print();
+                break;
             }
         }
     }
@@ -347,6 +522,7 @@ pub fn game_over(arg: &str) -> bool {
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
     let screen_height = screen_height as u16;
+    let (_stream, audio_handle) = OutputStream::try_default().unwrap();
 
     let box_width: u16 = 30.max(arg.len() as u16);
     let mut box_height = 5;
@@ -394,7 +570,7 @@ pub fn game_over(arg: &str) -> bool {
             esc = 27 as char
         );
         if try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -406,7 +582,7 @@ pub fn game_over(arg: &str) -> bool {
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         if !try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -435,10 +611,12 @@ pub fn game_over(arg: &str) -> bool {
 
             if keys.contains(&Keycode::Down) {
                 try_again = !try_again;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
             if keys.contains(&Keycode::Up) {
                 try_again = !try_again;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
             if keys.contains(&Keycode::Enter) {
@@ -456,6 +634,9 @@ pub fn finish(time: f64, level_name: &str) -> bool {
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
     let screen_height = screen_height as u16;
+
+    //for audio
+    let (_stream, audio_handle) = OutputStream::try_default().unwrap();
 
     // get the leaderboard
     let leader_boards = fs::read_to_string("./leaderboards.json").unwrap_or(String::from("{}"));
@@ -583,7 +764,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             esc = 27 as char
         );
         if try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -595,7 +776,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         if !try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -640,10 +821,12 @@ pub fn finish(time: f64, level_name: &str) -> bool {
 
             if keys.contains(&Keycode::Down) {
                 try_again = !try_again;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
             if keys.contains(&Keycode::Up) {
                 try_again = !try_again;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
             if keys.contains(&Keycode::Enter) {
@@ -667,13 +850,15 @@ pub fn exit() {
     let box_width: u16 = 30;
     let mut box_height = 5;
 
+    let (_stream, audio_handle) = OutputStream::try_default().unwrap();
+
     let start_x = screen_width / 2 - box_width / 2;
     let start_y = screen_height / 2 - box_height / 2;
     let mut exit = true;
 
     loop {
         // print background image
-        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
         for row in 0..=screen_height {
             println!(
                 "{}\r",
@@ -710,7 +895,7 @@ pub fn exit() {
             esc = 27 as char
         );
         if exit {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -722,7 +907,7 @@ pub fn exit() {
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         if !exit {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -749,14 +934,12 @@ pub fn exit() {
         loop {
             let keys = device_state.get_keys();
 
-            if keys.contains(&Keycode::Down) {
+            if keys.contains(&Keycode::Down) || keys.contains(&Keycode::Up) {
                 exit = !exit;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Up) {
-                exit = !exit;
-                break;
-            }
+
             if keys.contains(&Keycode::Enter) {
                 if exit {
                     let _ = crossterm::terminal::disable_raw_mode();
@@ -772,6 +955,7 @@ pub fn exit() {
 
                     std::process::exit(0);
                 } else {
+                    thread::sleep_ms(200);
                     return;
                 }
             }

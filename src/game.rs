@@ -231,14 +231,13 @@ impl Game {
 
             let dt = dt.min(0.2);
 
-            // play walking sound
-
-            // play random footsteps
-
-            // if random == 50 && play != true {
-            //     audio::walk(audio_handle, "./sounds/walking.mp3");
-            //     play = true;
-            // }
+            // render vertices
+            self.renderer.render_pruned_mt(
+                &self.camera,
+                &mesh,
+                &format!("{}{}{}", fps_text, timer_text, floor_text),
+                true,
+            );
 
             // handle input
             let mouse = device_state.get_mouse();
@@ -372,7 +371,8 @@ impl Game {
                 self.camera.vel.y = -JUMP_SPEED;
                 audio::play_audio(audio_handle, "./sounds/jump.mp3");
             }
-            if self.camera.pos.y > GW * (floors + 1) as f64 {
+
+            if self.camera.pos.y > GW * (floors + 10) as f64 {
                 return Err("death");
             }
 
