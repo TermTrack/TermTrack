@@ -103,12 +103,12 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     let start_x = screen_width / 2 - box_width / 2;
     let start_y = screen_height / 2 - box_height / 2;
 
-    let (_stream, background_audio_handle) = OutputStream::try_default().unwrap();
-    audio::play_audio(&background_audio_handle, "./sounds/menu.mp3");
+    let (_stream, audio_handle) = OutputStream::try_default().unwrap();
+    audio::play_audio(&audio_handle, "./sounds/menu.mp3");
 
     loop {
         // print background image
-        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
         for row in 0..=screen_height {
             println!(
                 "{}\r",
@@ -119,7 +119,8 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         }
 
         // print menu
-        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
+
+        // box upper line
         println!(
             "{esc}[{};{}H*{:-^3$}*",
             start_y,
@@ -128,6 +129,8 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             (box_width - 2) as usize,
             esc = 27 as char
         );
+
+        // box content
         let mut lowest = 0;
         let mut highest = 0;
         if chosen_level < box_height.div_ceil(2) {
@@ -154,6 +157,8 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             );
             print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         }
+
+        // box lower line
         println!(
             "{esc}[{};{}H*{:-^3$}*",
             start_y + box_height + 1,
@@ -172,10 +177,12 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             if keys.contains(&Keycode::Down) {
                 chosen_level += 1;
                 chosen_level = chosen_level.min(level_names.len() as u16 - 1);
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
             if keys.contains(&Keycode::Up) {
                 chosen_level = chosen_level.checked_sub(1).unwrap_or(0);
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
             if keys.contains(&Keycode::Enter) {
