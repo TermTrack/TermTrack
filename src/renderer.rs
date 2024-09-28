@@ -160,18 +160,29 @@ impl Screen {
             x: 0.,
             y: 0.,
             z: 1.,
-        }
-        .rotate(camera.rotation);
+        };
+        let min_dim = self.w.min(self.h * 2) as f64 / 2.;
+        let pixel_coords = Vec3 {
+            x: -(self.w as f64 / 2.) / min_dim,
+            y: -(self.h as f64 / 2.) / min_dim,
+            z: camera.focus_length,
+        };
+        let angle = (forward.dot(pixel_coords) / pixel_coords.abs())
+            .acos()
+            .abs()
+            + 5.;
+        let forward = forward.rotate(camera.rotation);
         for tri in mesh.tris() {
             let mut valid = false;
             for p in [tri.v0, tri.v1, tri.v2] {
                 // vector from pos to vertex
                 let v = p - camera.pos;
-                if v.abs() < RENDER_DIST {
+                let v_abs = v.abs();
+                if v_abs < RENDER_DIST {
                     valid = true;
                     break;
                 }
-                if v.dot(forward) >= 0. {
+                if (v.dot(forward) / v_abs).acos() <= angle {
                     valid = true;
                     break;
                 }

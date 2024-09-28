@@ -1,4 +1,5 @@
-use crate::mat::*;
+use crate::game::Enemy;
+use crate::{game, mat::*};
 use std::path::PathBuf;
 use std::{fs, io};
 
@@ -12,6 +13,7 @@ pub struct LevelMap {
     pub start_pos: (f64, f64, f64),
     pub map_string: String,
     pub level_name: String,
+    pub enemies: Vec<game::Enemy>,
 }
 
 const WALL: [[(f64, f64, f64); 8]; 6] = [
@@ -370,6 +372,7 @@ pub fn load(path: &PathBuf) -> LevelMap {
         .iter()
         .map(|x| x.split("\n").map(|y| y.trim()).collect::<Vec<_>>())
         .collect::<Vec<_>>();
+    let mut enemies: Vec<Enemy> = vec![];
     for (level, map) in maps.iter().enumerate() {
         let rows = map;
         for (z, row) in rows.iter().enumerate() {
@@ -393,6 +396,14 @@ pub fn load(path: &PathBuf) -> LevelMap {
                     }
                     '.' => {
                         grid = add_floor(grid, level, x, row, z, rows, &mut colliders_grid);
+                    }
+                    'e' => {
+                        grid = add_floor(grid, level, x, row, z, rows, &mut colliders_grid);
+                        enemies.push(Enemy::default().translate(Vec3 {
+                            x: x as f64 * GW,
+                            y: level as f64 * GH,
+                            z: z as f64 * GW,
+                        }));
                     }
 
                     ' ' => {
@@ -472,6 +483,7 @@ pub fn load(path: &PathBuf) -> LevelMap {
         start_pos: start,
         map_string: map_string,
         level_name,
+        enemies,
     }
 }
 
