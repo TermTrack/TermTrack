@@ -6,8 +6,8 @@ pub const RENDER_DIST: f64 = 30.;
 
 pub fn get_terminal_size() -> (usize, usize) {
     let (w, h) = crossterm::terminal::size().unwrap();
-    let w = (w as usize).min(200);
-    let h = (h as usize).min(75);
+    let w = (w as usize).min(350);
+    let h = (h as usize).min(150);
     (w, h)
 }
 
@@ -15,13 +15,11 @@ pub struct Screen {
     pub w: usize,
     pub h: usize,
     pub buffer: Vec<Vec<Vec3>>,
-    raw: (),
 }
 
 impl Screen {
     pub fn new() -> Self {
         let (w, h) = get_terminal_size();
-        let raw = crossterm::terminal::enable_raw_mode().unwrap();
         let mut stdout = std::io::stdout();
         crossterm::execute!(stdout, crossterm::cursor::Hide).unwrap();
         let h = h - 1;
@@ -45,7 +43,6 @@ impl Screen {
             w: w.into(),
             h: h.into(),
             buffer,
-            raw,
         }
     }
 

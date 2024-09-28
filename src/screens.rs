@@ -1,12 +1,13 @@
+use std::io::{self, stdin, BufReader, Read};
 use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
-use crossterm;
+use crossterm::{self, execute};
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use rodio::OutputStreamHandle;
 use rodio::{source::Source, Decoder, OutputStream};
 use serde_json::{json, Value};
 
-use crate::audio;
+use crate::{audio, screens};
 
 use crate::renderer;
 
@@ -181,7 +182,7 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
                 return chosen_level as usize;
             }
             if keys.contains(&Keycode::E) {
-                panic!("exited app");
+                screens::exit();
             }
         }
     }
@@ -498,6 +499,127 @@ pub fn finish(time: f64, level_name: &str) -> bool {
                         .expect("couldn't write json");
                 }
                 return try_again;
+            }
+        }
+    }
+}
+
+pub fn exit() {
+    let device_state = DeviceState::new();
+    let (screen_width, screen_height) = renderer::get_terminal_size();
+    let screen_width = screen_width as u16;
+    let screen_height = screen_height as u16;
+
+    let box_width: u16 = 30;
+    let mut box_height = 5;
+
+    let start_x = screen_width / 2 - box_width / 2;
+    let start_y = screen_height / 2 - box_height / 2;
+    let mut exit = true;
+
+    loop {
+        // print background image
+        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
+        for row in 0..=screen_height {
+            println!(
+                "{}\r",
+                std::iter::repeat(" ")
+                    .take(screen_width as usize)
+                    .collect::<String>()
+            )
+        }
+
+        // print menu
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
+        println!(
+            "{esc}[{};{}H*{:-^3$}*",
+            start_y,
+            start_x,
+            "",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        println!(
+            "{esc}[{};{}H|{: ^3$}|",
+            start_y + 1,
+            start_x,
+            "Are you sure you",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        println!(
+            "{esc}[{};{}H|{: ^3$}|",
+            start_y + 2,
+            start_x,
+            "want to exit?",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        if exit {
+            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+        }
+        println!(
+            "{esc}[{};{}H|{: ^3$}|",
+            start_y + 3,
+            start_x,
+            "YES",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
+        if !exit {
+            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+        }
+        println!(
+            "{esc}[{};{}H|{: ^3$}|",
+            start_y + 4,
+            start_x,
+            "NO",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
+        println!(
+            "{esc}[{};{}H*{:-^3$}*",
+            start_y + 5,
+            start_x,
+            "",
+            (box_width - 2) as usize,
+            esc = 27 as char
+        );
+
+        thread::sleep_ms(200);
+
+        //match input
+        loop {
+            let keys = device_state.get_keys();
+
+            if keys.contains(&Keycode::Down) {
+                exit = !exit;
+                break;
+            }
+            if keys.contains(&Keycode::Up) {
+                exit = !exit;
+                break;
+            }
+            if keys.contains(&Keycode::Enter) {
+                if exit {
+                    let _ = crossterm::terminal::disable_raw_mode();
+
+                    println!("\x1b[2J\x1b[H\x1b[48;2;0;0;0mGame closing\r");
+                    let _ = thread::spawn(|| {
+                        for x in stdin().bytes() {
+                            let _ = x;
+                        }
+                    });
+                    thread::sleep_ms(100);
+                    println!("\x1b[2J\x1b[H\x1b[48;2;0;0;0mGame Closed\r");
+
+                    std::process::exit(0);
+                } else {
+                    return;
+                }
             }
         }
     }
