@@ -5,10 +5,10 @@ use rodio::{source::Source, Decoder, OutputStream};
 
 use crate::loader::{self, load};
 use crate::renderer::{self, *};
-use crate::GH;
 use crate::GW;
 use crate::{audio, LevelMap};
 use crate::{camera::Camera, mat::*};
+use crate::{screens, GH};
 use core::panic;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -58,8 +58,10 @@ impl Game {
         let floors = renderer::map_as_vec_of_floors(&map_string).len();
 
         // Get an output stream handle to the default physical sound device
-        let (_stream, background_audio_handle) = OutputStream::try_default().unwrap();
-        audio::audio_loop(&background_audio_handle, "./sounds/background.mp3");
+        let (_stream, level_audio_handle) = OutputStream::try_default().unwrap();
+        audio::audio_loop(&level_audio_handle, "./sounds/background.mp3");
+        let walk = audio::create_infinite_sink(&level_audio_handle, "./sounds/walk.mp3");
+        walk.pause();
 
         loop {
             // reset timer
@@ -104,7 +106,7 @@ impl Game {
 
                 let mut stdout = std::io::stdout();
                 crossterm::execute!(stdout, crossterm::terminal::EnterAlternateScreen).unwrap();
-                panic!("Exited app")
+                screens::exit();
             }
             if keys.contains(&Keycode::M) {
                 let time1 = time.elapsed();
@@ -181,6 +183,16 @@ impl Game {
             // add gravity
             self.camera.vel = v;
             self.camera.vel.y += GRAVITY * dt;
+
+            if self.camera.vel.x != 0. || self.camera.vel.z != 0. {
+                if walk.is_paused() {
+                    walk.play();
+                }
+            } else {
+                if !walk.is_paused() {
+                    walk.pause();
+                }
+            }
 
             // collision
             let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1, None);

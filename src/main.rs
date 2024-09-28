@@ -26,6 +26,7 @@ fn main() {
     let entries = fs::read_dir(level_dir).unwrap();
     let levels: Vec<PathBuf> = entries.map(|e| e.unwrap().path()).collect();
     let (_stream, stream_handle) = OutputStream::try_default().expect("couldnt get sound handle!");
+    let _ = crossterm::terminal::enable_raw_mode().unwrap();
     loop {
         let chosen_level = screens::menu(levels.clone(), &stream_handle);
         let map = loader::load(&levels[chosen_level]);
