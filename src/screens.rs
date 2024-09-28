@@ -1,13 +1,9 @@
-use std::io::{self, stdin, BufReader, Read};
-use std::{ffi::OsStr, fs, path::PathBuf, thread};
-
-use crossterm::cursor::Hide;
-use crossterm::{self, execute};
-use crossterm::{self, ExecutableCommand};
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use rodio::OutputStreamHandle;
 use rodio::{source::Source, Decoder, OutputStream};
 use serde_json::{json, Value};
+use std::io::{self, stdin, BufReader, Read};
+use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
 use crate::{audio, screens};
 
@@ -397,7 +393,7 @@ pub fn game_over(arg: &str) -> bool {
             esc = 27 as char
         );
         if try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -409,7 +405,7 @@ pub fn game_over(arg: &str) -> bool {
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         if !try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -586,7 +582,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             esc = 27 as char
         );
         if try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -598,7 +594,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         if !try_again {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -676,7 +672,7 @@ pub fn exit() {
 
     loop {
         // print background image
-        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
         for row in 0..=screen_height {
             println!(
                 "{}\r",
@@ -713,7 +709,7 @@ pub fn exit() {
             esc = 27 as char
         );
         if exit {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
@@ -725,7 +721,7 @@ pub fn exit() {
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         if !exit {
-            print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
             "{esc}[{};{}H|{: ^3$}|",
