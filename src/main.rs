@@ -38,7 +38,7 @@ fn main() {
                     y: 0.,
                     z: 0.,
                 },
-                focus_length: 2., //2
+                focus_length: 1.5, //2
                 rotation: Vec3 {
                     x: 1.75,
                     y: 0.0,

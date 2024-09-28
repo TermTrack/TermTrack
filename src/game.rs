@@ -1,4 +1,5 @@
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
+use rayon::iter::IntoParallelIterator;
 use rodio::OutputStreamHandle;
 
 use rodio::{source::Source, Decoder, OutputStream};
@@ -13,15 +14,163 @@ use core::panic;
 use std::thread;
 use std::time::{Duration, Instant};
 
+#[derive(Clone)]
+pub struct Enemy {
+    pos: Vec3,
+    speed: f64,
+    vel: Vec3,
+    collider: BoxCollider,
+    mesh: Mesh,
+    vision: f64,
+}
+
+impl Default for Enemy {
+    fn default() -> Self {
+        Self {
+            pos: Vec3 {
+                x: GW * 0.5,
+                y: GH * 0.5,
+                z: GW * 0.5,
+            },
+            speed: 10.,
+            vel: Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            },
+            collider: BoxCollider {
+                max_x: GW * 0.1,
+                max_y: GW * 0.1,
+                max_z: GW * 0.1,
+                min_x: -GW * 0.1,
+                min_y: -GW * 0.1,
+                min_z: -GW * 0.1,
+                tag: Some("death"),
+            },
+            mesh: Mesh::new(Vec::from([
+                //left
+                (-GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (-GW * 0.1, -GW * 0.1, GW * 0.1),
+                (-GW * 0.1, GW * 0.1, GW * 0.1),
+                (255., 0., 0.),
+                (-GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (-GW * 0.1, GW * 0.1, GW * 0.1),
+                (-GW * 0.1, GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+                //front
+                (-GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (GW * 0.1, GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+                (-GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (-GW * 0.1, GW * 0.1, -GW * 0.1),
+                (GW * 0.1, GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+                //right
+                (GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (GW * 0.1, -GW * 0.1, GW * 0.1),
+                (GW * 0.1, GW * 0.1, GW * 0.1),
+                (255., 0., 0.),
+                (GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (GW * 0.1, GW * 0.1, GW * 0.1),
+                (GW * 0.1, GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+                //back
+                (-GW * 0.1, -GW * 0.1, GW * 0.1),
+                (GW * 0.1, -GW * 0.1, GW * 0.1),
+                (GW * 0.1, GW * 0.1, GW * 0.1),
+                (255., 0., 0.),
+                (-GW * 0.1, -GW * 0.1, GW * 0.1),
+                (-GW * 0.1, GW * 0.1, GW * 0.1),
+                (GW * 0.1, GW * 0.1, GW * 0.1),
+                (255., 0., 0.),
+                //top
+                (-GW * 0.1, GW * 0.1, -GW * 0.1),
+                (-GW * 0.1, GW * 0.1, GW * 0.1),
+                (GW * 0.1, GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+                (GW * 0.1, GW * 0.1, GW * 0.1),
+                (-GW * 0.1, GW * 0.1, GW * 0.1),
+                (GW * 0.1, GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+                // bottom
+                (-GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (-GW * 0.1, -GW * 0.1, GW * 0.1),
+                (GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+                (GW * 0.1, -GW * 0.1, GW * 0.1),
+                (-GW * 0.1, -GW * 0.1, GW * 0.1),
+                (GW * 0.1, -GW * 0.1, -GW * 0.1),
+                (255., 0., 0.),
+            ])),
+            vision: GW * 4.,
+        }
+    }
+}
+
+impl Enemy {
+    pub fn update(&mut self, dt: f64, player_positon: Vec3, colliders: &Vec<BoxCollider>) {
+        let vec_to_player = player_positon - self.pos;
+        if (vec_to_player).abs() < self.vision {
+            self.vel = vec_to_player.norm() * self.speed;
+            let mut col = self.collider.clone();
+            check_collision(
+                &mut col,
+                &mut self.pos,
+                &mut self.vel,
+                dt,
+                colliders,
+                &mut false,
+            );
+            self.pos = self.pos + self.vel * dt;
+        }
+    }
+    pub fn get_collider(&self) -> BoxCollider {
+        let mut col = self.collider.clone();
+        col.translate(self.pos);
+        return col;
+    }
+
+    pub fn translate(mut self, to: Vec3) -> Self {
+        self.pos = self.pos + to;
+        return self;
+    }
+
+    pub fn get_mesh(&self) -> Mesh {
+        let mut mesh = self.mesh.clone();
+        for tri in mesh.mut_tris() {
+            tri.v0 = tri.v0
+                + Vec3 {
+                    x: self.pos.x,
+                    z: self.pos.z,
+                    y: self.pos.y,
+                };
+            tri.v1 = tri.v1
+                + Vec3 {
+                    x: self.pos.x,
+                    z: self.pos.z,
+                    y: self.pos.y,
+                };
+            tri.v2 = tri.v2
+                + Vec3 {
+                    x: self.pos.x,
+                    z: self.pos.z,
+                    y: self.pos.y,
+                };
+        }
+        return mesh;
+    }
+}
+
 pub struct Game {
     pub renderer: Screen,
     pub camera: Camera,
 }
 
 const SPEED: f64 = 25.;
-const JUMP_SPEED: f64 = 40.;
+const JUMP_SPEED: f64 = 45.;
 const ROTATION_SPEED: f64 = 2.5;
-const GRAVITY: f64 = 90.;
+const GRAVITY: f64 = 85.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 4.5, -1.), (1., -1., 1.));
 
 impl Game {
@@ -39,6 +188,7 @@ impl Game {
             start_pos: start,
             map_string,
             level_name,
+            mut enemies,
         } = map;
 
         self.camera.pos = Vec3 {
@@ -79,14 +229,6 @@ impl Game {
             );
 
             let dt = dt.min(0.033);
-
-            // render vertices
-            self.renderer.render_pruned_mt(
-                &self.camera,
-                &mesh,
-                &format!("{}{}{}", fps_text, timer_text, floor_text),
-                true,
-            );
 
             // play walking sound
 
@@ -194,6 +336,15 @@ impl Game {
                 }
             }
 
+            //update enemies
+            let mut render_mesh = mesh.clone();
+            let mut cols = colliders.clone();
+            for enemy in enemies.iter_mut() {
+                enemy.update(dt, self.camera.pos, &colliders);
+                cols.push(enemy.get_collider());
+                render_mesh = render_mesh + enemy.get_mesh();
+            }
+
             // collision
             let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1, None);
             let mut grounded = false;
@@ -202,7 +353,7 @@ impl Game {
                 &mut self.camera.pos,
                 &mut self.camera.vel,
                 dt,
-                &colliders,
+                &cols,
                 &mut grounded,
             ) {
                 return match tag {
@@ -212,15 +363,23 @@ impl Game {
                 };
             };
 
+            self.camera.update_pos(dt);
             // jump
             if grounded && keys.contains(&Keycode::Space) {
                 self.camera.vel.y = -JUMP_SPEED;
                 audio::play_audio(audio_handle, "./sounds/jump.mp3");
             }
-            self.camera.update_pos(dt);
             if self.camera.pos.y > GW * (floors + 1) as f64 {
                 return Err("death");
             }
+
+            // render vertices
+            self.renderer.render_pruned_mt(
+                &self.camera,
+                &render_mesh,
+                &format!("{}{}{}", fps_text, timer_text, floor_text),
+                true,
+            );
         }
     }
 }
