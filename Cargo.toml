@@ -8,3 +8,5 @@ crossterm = {version = "=0.28.1"}
 device_query = "2.1.0"
 rayon = "1.10.0"
 rodio = "0.19.0"
+serde = "1.0.210"
+serde_json = "1.0.128"

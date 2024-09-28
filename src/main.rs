@@ -53,7 +53,7 @@ fn main() {
         loop {
             match game.run(map.clone(), &stream_handle) {
                 Ok(time) => {
-                    if screens::finish(time) {
+                    if screens::finish(time, &map.level_name) {
                         continue;
                     }
                 }
