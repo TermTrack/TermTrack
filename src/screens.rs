@@ -455,11 +455,16 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             if i == chosen_level {
                 print!("{esc}[48;2;46;46;46m", esc = 27 as char);
             }
+
+            let mut level_name = level_names[i as usize].to_str().unwrap().to_string();
+            if level_name.len() > box_width as usize - 2 {
+                level_name = level_name[0..(box_width as usize - 5)].to_string() + "...";
+            }
             println!(
                 "{esc}[{};{}H|{:^3$}|",
                 y + 1 + (i - lowest),
                 x,
-                level_names[i as usize].to_str().unwrap(),
+                level_name,
                 (box_width - 2) as usize,
                 esc = 27 as char
             );
