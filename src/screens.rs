@@ -1,9 +1,6 @@
 use std::io::{self, stdin, BufReader, Read};
 use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
-use crossterm::cursor::Hide;
-use crossterm::{self, execute};
-use crossterm::{self, ExecutableCommand};
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use rodio::OutputStreamHandle;
 use rodio::{source::Source, Decoder, OutputStream};

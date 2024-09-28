@@ -1,5 +1,5 @@
 use crate::game::Enemy;
-use crate::{game, mat::*};
+use crate::mat::*;
 use std::path::PathBuf;
 use std::{fs, io};
 
@@ -13,7 +13,7 @@ pub struct LevelMap {
     pub start_pos: (f64, f64, f64),
     pub map_string: String,
     pub level_name: String,
-    pub enemies: Vec<game::Enemy>,
+    pub enemies: Vec<Enemy>,
 }
 
 const WALL: [[(f64, f64, f64); 8]; 6] = [
@@ -333,10 +333,7 @@ const GOAL_COLLIDER: [(f64, f64, f64); 2] = [
     (GW * 0.9, GH * 0.1, GW * 0.9),
 ];
 
-const SPIKE_COLLIDER: [(f64, f64, f64); 2] = [
-    (GW * 0.15, GH * 0.9, GW * 0.15),
-    (GW * 0.85, GH * 0.7, GW * 0.85),
-];
+const SPIKE_COLLIDER: [(f64, f64, f64); 2] = [(0., GH * 0.9, 0.), (GW, GH * 0.8, GW)];
 const SPIKE: [(f64, f64, f64); 4 * 4] = [
     (GW, GH * 0.9, 0.),
     (GW / 2., GH * 0.6, GW / 2.),
@@ -365,11 +362,10 @@ pub fn load(path: &PathBuf) -> LevelMap {
     let mut start = (0., 0., 0.);
     let mut colliders: Vec<BoxCollider> = vec![];
     let map_string = fs::read_to_string(path).expect("couldn't read level");
-    let floors = separate_map(&map_string).len();
     let level_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
     let maps = separate_map(&map_string)
         .iter()
-        .map(|x| x.split("\n").map(|y| y.trim()).collect::<Vec<_>>())
+        .map(|x| x.split("\n").map(|y| y.trim_end()).collect::<Vec<_>>())
         .collect::<Vec<_>>();
     let mut enemies: Vec<Enemy> = vec![];
     for (level, map) in maps.iter().enumerate() {
@@ -400,7 +396,7 @@ pub fn load(path: &PathBuf) -> LevelMap {
                         grid = add_floor(grid, level, x, row, z, rows, &mut colliders_grid);
                         enemies.push(Enemy::default().translate(Vec3 {
                             x: x as f64 * GW,
-                            y: level as f64 * GH,
+                            y: -(level as f64 * GH),
                             z: z as f64 * GW,
                         }));
                     }
@@ -508,9 +504,9 @@ fn add_wall(
 ) -> Mesh {
     // Adding the visible face
     if level >= maps.len() - 1
-        || maps[level + 1].get(z) != None
-            && ![Some('X'), Some('.'), Some('v'), Some('S'), Some('E')]
-                .contains(&maps[level + 1][z].chars().nth(x))
+        || maps[level + 1].get(z) == None
+        || ![Some('X'), Some('.'), Some('v'), Some('S'), Some('E')]
+            .contains(&maps[level + 1][z].chars().nth(x))
     {
         // add top wall
         grid = grid + Mesh::new(Vec::from(WALL[0]));
@@ -522,19 +518,19 @@ fn add_wall(
         //add under-wall
         grid = grid + Mesh::new(Vec::from(WALL[1]));
     }
-    if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
+    if z == 0 || rows[z - 1].chars().nth(x) != Some('X') {
         // add upper wall
         grid = grid + Mesh::new(Vec::from(WALL[2]));
     }
-    if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
+    if z == rows.len() - 1 || rows[z + 1].chars().nth(x) != Some('X') {
         // add bottom wall
         grid = grid + Mesh::new(Vec::from(WALL[3]));
     }
-    if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
+    if x == 0 || rows[z].chars().nth(x - 1) != Some('X') {
         // add left wall
         grid = grid + Mesh::new(Vec::from(WALL[4]));
     }
-    if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
+    if x == row.len() - 1 || rows[z].chars().nth(x + 1) != Some('X') {
         // add right wall
         grid = grid + Mesh::new(Vec::from(WALL[5]));
     }
@@ -564,19 +560,19 @@ fn add_half_wall(
         grid = grid + Mesh::new(Vec::from(HALF_WALL[1]));
     }
 
-    if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
+    if z == 0 || rows[z - 1].chars().nth(x) != Some('X') {
         // add upper wall
         grid = grid + Mesh::new(Vec::from(HALF_WALL[2]));
     }
-    if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
+    if z == rows.len() - 1 || rows[z + 1].chars().nth(x) != Some('X') {
         // add bottom wall
         grid = grid + Mesh::new(Vec::from(HALF_WALL[3]));
     }
-    if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
+    if x == 0 || rows[z].chars().nth(x - 1) != Some('X') {
         // add left wall
         grid = grid + Mesh::new(Vec::from(HALF_WALL[4]));
     }
-    if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
+    if x == row.len() - 1 || rows[z].chars().nth(x + 1) != Some('X') {
         // add right wall
         grid = grid + Mesh::new(Vec::from(HALF_WALL[5]));
     }
@@ -604,19 +600,19 @@ fn add_floor(
     if level != 0 {
         grid = grid + Mesh::new(Vec::from(FLOOR[1]));
     }
-    if x != 0 && row.chars().nth(x - 1) != Some('.') {
+    if x == 0 || row.chars().nth(x - 1) != Some('.') {
         // add left floor wall
         grid = grid + Mesh::new(Vec::from(FLOOR[2]));
     }
-    if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
+    if x == row.len() - 1 || row.chars().nth(x + 1) != Some('.') {
         // add right floor wall
         grid = grid + Mesh::new(Vec::from(FLOOR[3]));
     }
-    if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
+    if z == 0 || rows[z - 1].chars().nth(x) != Some('.') {
         // add front floor wall
         grid = grid + Mesh::new(Vec::from(FLOOR[4]));
     }
-    if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
+    if z == rows.len() - 1 || rows[z + 1].chars().nth(x) != Some('.') {
         // add back floor wall
         grid = grid + Mesh::new(Vec::from(FLOOR[5]));
     }

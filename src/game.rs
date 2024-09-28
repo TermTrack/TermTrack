@@ -32,7 +32,7 @@ impl Default for Enemy {
                 y: GH * 0.5,
                 z: GW * 0.5,
             },
-            speed: 10.,
+            speed: 20.,
             vel: Vec3 {
                 x: 0.,
                 y: 0.,
@@ -167,8 +167,8 @@ pub struct Game {
     pub camera: Camera,
 }
 
-const SPEED: f64 = 25.;
-const JUMP_SPEED: f64 = 45.;
+const SPEED: f64 = 27.5;
+const JUMP_SPEED: f64 = 42.;
 const ROTATION_SPEED: f64 = 2.5;
 const GRAVITY: f64 = 85.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 4.5, -1.), (1., -1., 1.));
@@ -211,6 +211,7 @@ impl Game {
         let (_stream, level_audio_handle) = OutputStream::try_default().unwrap();
         audio::audio_loop(&level_audio_handle, "./sounds/background.mp3");
         let walk = audio::create_infinite_sink(&level_audio_handle, "./sounds/walk.mp3");
+        walk.set_volume(10.);
         walk.pause();
 
         loop {
@@ -228,7 +229,7 @@ impl Game {
                 floors
             );
 
-            let dt = dt.min(0.033);
+            let dt = dt.min(0.2);
 
             // play walking sound
 
@@ -244,14 +245,16 @@ impl Game {
             let keys = device_state.get_keys();
 
             if keys.contains(&Keycode::E) {
-                let _ = crossterm::terminal::disable_raw_mode().unwrap();
+                let time1 = time.elapsed();
+                let timer_1 = level_timer.elapsed();
 
-                let mut stdout = std::io::stdout();
-                crossterm::execute!(stdout, crossterm::terminal::EnterAlternateScreen).unwrap();
                 screens::exit();
+                time = Instant::now().checked_sub(time1).unwrap();
+                level_timer = Instant::now().checked_sub(timer_1).unwrap();
             }
             if keys.contains(&Keycode::M) {
                 let time1 = time.elapsed();
+                let timer_1 = level_timer.elapsed();
                 time = Instant::now();
                 self.renderer
                     .render_map(&map_string, self.camera.pos, loader::GW);
@@ -265,6 +268,7 @@ impl Game {
                     }
                 }
                 time = Instant::now().checked_sub(time1).unwrap();
+                level_timer = Instant::now().checked_sub(timer_1).unwrap();
             }
             if keys.contains(&Keycode::Left) {
                 self.camera.rotation.x -= ROTATION_SPEED * dt;
@@ -326,16 +330,6 @@ impl Game {
             self.camera.vel = v;
             self.camera.vel.y += GRAVITY * dt;
 
-            if self.camera.vel.x != 0. || self.camera.vel.z != 0. {
-                if walk.is_paused() {
-                    walk.play();
-                }
-            } else {
-                if !walk.is_paused() {
-                    walk.pause();
-                }
-            }
-
             //update enemies
             let mut render_mesh = mesh.clone();
             let mut cols = colliders.clone();
@@ -362,6 +356,15 @@ impl Game {
                     t => panic!("unkown collider-tag: {t}"),
                 };
             };
+            if (self.camera.vel.x != 0. || self.camera.vel.z != 0.) && grounded {
+                if walk.is_paused() {
+                    walk.play();
+                }
+            } else {
+                if !walk.is_paused() {
+                    walk.pause();
+                }
+            }
 
             self.camera.update_pos(dt);
             // jump
