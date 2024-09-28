@@ -109,8 +109,8 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         // print background image
         print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
         for row in 0..=screen_height {
-            print!(
-                "{}",
+            println!(
+                "{}\r",
                 std::iter::repeat(" ")
                     .take(screen_width as usize)
                     .collect::<String>()
@@ -202,10 +202,10 @@ pub fn game_over(arg: &str) -> bool {
 
     loop {
         // print background image
-        print!("{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
         for row in 0..=screen_height {
-            print!(
-                "{}",
+            println!(
+                "{}\r",
                 std::iter::repeat(" ")
                     .take(screen_width as usize)
                     .collect::<String>()
@@ -335,10 +335,10 @@ pub fn finish(time: f64, level_name: &str) -> bool {
 
     loop {
         // print background image
-        print!("{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
         for row in 0..=screen_height {
-            print!(
-                "{}",
+            println!(
+                "{}\r",
                 std::iter::repeat(" ")
                     .take(screen_width as usize)
                     .collect::<String>()
@@ -494,7 +494,6 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             if keys.contains(&Keycode::Enter) {
                 if !name.is_empty() {
                     leader_vec.push(json!({"name": name, "time": time}));
-                    println!("{:?}", leader_boards);
                     fs::write("./leaderboards.json", leader_boards.to_string())
                         .expect("couldn't write json");
                 }

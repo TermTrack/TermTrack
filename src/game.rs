@@ -76,6 +76,8 @@ impl Game {
                 floors
             );
 
+            let dt = dt.min(0.033);
+
             // render vertices
             self.renderer.render_pruned_mt(
                 &self.camera,

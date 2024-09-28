@@ -14,49 +14,6 @@ pub struct LevelMap {
     pub level_name: String,
 }
 
-// pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
-// XS.......X...............X
-// X........................X
-// XXXXXX.........X...X.....X
-// X....XXXXX...............X
-// X....X...X...............X
-// X....X...X....XXXXXXX....X
-// X........................X
-// X.......................EX
-// XXXXXXXXXXXXXXXXXXXXXXXXXX";
-
-// pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
-// X                        X
-// X S . . ..  . ..         X
-// X        .     .         X
-// X                        X
-// X        . . .. ..       X
-// X                . E     X
-// X                        X
-// XXXXXXXXXXXXXXXXXXXXXXXXXX";
-
-// pub const MAP: &str = "XXXXXXXXXXXXXXXXXXXXXXXXXX
-// XS.......X...............X
-// X........................X
-// XXXXXX.........X   X.....X
-// X....XXXXX...............X
-// X....X...X...............X
-// X....X...X....XXXXXXX....X
-// X.....................XXXX
-// X.......................UX
-// XXXXXXXXXXXXXXXXXXXXXXXXXX
-// sep
-// XXXXXXXXXXXXXXXXXXXXXXXXXX
-// X          .            EX
-// X                        X
-// X.......XX     .   .     X
-// X    ....X    XXXXXXX    X
-// X    .   X               X
-// X    .   .    .......    X
-// X                     ...X
-// X                       DX
-// XXXXXXXXXXXXXXXXXXXXXXXXXX";
-
 const WALL: [[(f64, f64, f64); 8]; 6] = [
     // top face
     [
@@ -374,6 +331,29 @@ const GOAL_COLLIDER: [(f64, f64, f64); 2] = [
     (GW * 0.9, GH * 0.1, GW * 0.9),
 ];
 
+const SPIKE_COLLIDER: [(f64, f64, f64); 2] = [
+    (GW * 0.15, GH * 0.9, GW * 0.15),
+    (GW * 0.85, GH * 0.7, GW * 0.85),
+];
+const SPIKE: [(f64, f64, f64); 4 * 4] = [
+    (GW, GH * 0.9, 0.),
+    (GW / 2., GH * 0.6, GW / 2.),
+    (GW, GH * 0.9, GW),
+    (100., 100., 100.),
+    (GW, GH * 0.9, 0.),
+    (GW / 2., GH * 0.6, GW / 2.),
+    (0., GH * 0.9, 0.),
+    (100., 100., 100.),
+    (0., GH * 0.9, 0.),
+    (GW / 2., GH * 0.6, GW / 2.),
+    (0., GH * 0.9, GW),
+    (100., 100., 100.),
+    (0., GH * 0.9, GW),
+    (GW / 2., GH * 0.6, GW / 2.),
+    (GW, GH * 0.9, GW),
+    (100., 100., 100.),
+];
+
 fn separate_map(map: &str) -> Vec<&str> {
     map.split("sep\n").collect()
 }
@@ -382,12 +362,15 @@ pub fn load(path: &PathBuf) -> LevelMap {
     let mut mesh = Mesh::new([].into());
     let mut start = (0., 0., 0.);
     let mut colliders: Vec<BoxCollider> = vec![];
-    let map = fs::read_to_string(path).expect("couldn't read level");
-    let floors = separate_map(&map).len();
+    let map_string = fs::read_to_string(path).expect("couldn't read level");
+    let floors = separate_map(&map_string).len();
     let level_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-
-    for (level, map) in separate_map(&map).iter().enumerate() {
-        let rows: Vec<&str> = map.split("\n").map(|x| x.trim()).collect();
+    let maps = separate_map(&map_string)
+        .iter()
+        .map(|x| x.split("\n").map(|y| y.trim()).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+    for (level, map) in maps.iter().enumerate() {
+        let rows = map;
         for (z, row) in rows.iter().enumerate() {
             if row.is_empty() {
                 continue;
@@ -396,93 +379,19 @@ pub fn load(path: &PathBuf) -> LevelMap {
                 let mut grid = Mesh::new(vec![]);
                 let mut colliders_grid: Vec<BoxCollider> = vec![];
                 match ch {
+                    'v' => {
+                        grid = add_spike(grid, &mut colliders_grid);
+                        grid = add_floor(grid, level, x, row, z, rows, &mut colliders_grid);
+                    }
                     'X' => {
-                        // Adding the visible face
-                        grid = grid + Mesh::new(Vec::from(WALL[0]));
-                        grid = grid + Mesh::new(Vec::from(WALL[1]));
-
-                        if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
-                            // add upper wall
-                            grid = grid + Mesh::new(Vec::from(WALL[2]));
-                        }
-                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
-                            // add bottom wall
-                            grid = grid + Mesh::new(Vec::from(WALL[3]));
-                        }
-                        if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
-                            // add left wall
-                            grid = grid + Mesh::new(Vec::from(WALL[4]));
-                        }
-                        if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
-                            // add right wall
-                            grid = grid + Mesh::new(Vec::from(WALL[5]));
-                        }
-
-                        colliders_grid.push(BoxCollider::new(
-                            WALL_COLLIDER[0],
-                            WALL_COLLIDER[1],
-                            None,
-                        ));
+                        grid = add_wall(level, &maps, z, x, grid, rows, row, &mut colliders_grid);
                     }
                     'x' => {
-                        // Adding the visible face
-                        grid = grid + Mesh::new(Vec::from(HALF_WALL[0]));
-                        grid = grid + Mesh::new(Vec::from(HALF_WALL[1]));
-
-                        if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
-                            // add upper wall
-                            grid = grid + Mesh::new(Vec::from(HALF_WALL[2]));
-                        }
-                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
-                            // add bottom wall
-                            grid = grid + Mesh::new(Vec::from(HALF_WALL[3]));
-                        }
-                        if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
-                            // add left wall
-                            grid = grid + Mesh::new(Vec::from(HALF_WALL[4]));
-                        }
-                        if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
-                            // add right wall
-                            grid = grid + Mesh::new(Vec::from(HALF_WALL[5]));
-                        }
-
-                        colliders_grid.push(BoxCollider::new(
-                            HALF_WALL_COLLIDER[0],
-                            HALF_WALL_COLLIDER[1],
-                            None,
-                        ));
+                        grid =
+                            add_half_wall(grid, level, &maps, z, x, rows, row, &mut colliders_grid);
                     }
                     '.' => {
-                        // add floor
-                        // add lower section (roof)
-                        grid = grid + Mesh::new(Vec::from(FLOOR[0]));
-                        if level != 0 {
-                            grid = grid + Mesh::new(Vec::from(FLOOR[1]));
-                        }
-                        if x != 0 && row.chars().nth(x - 1) != Some('.') {
-                            // add left floor wall
-                            grid = grid + Mesh::new(Vec::from(FLOOR[2]));
-                        }
-                        if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
-                            // add right floor wall
-                            grid = grid + Mesh::new(Vec::from(FLOOR[3]));
-                        }
-                        if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
-                            // add front floor wall
-                            grid = grid + Mesh::new(Vec::from(FLOOR[4]));
-                        }
-                        if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
-                            // add back floor wall
-                            grid = grid + Mesh::new(Vec::from(FLOOR[5]));
-                        }
-
-                        // add collider to colliders
-
-                        colliders_grid.push(BoxCollider::new(
-                            FLOOR_COLLIDER[0],
-                            FLOOR_COLLIDER[1],
-                            None,
-                        ));
+                        grid = add_floor(grid, level, x, row, z, rows, &mut colliders_grid);
                     }
 
                     ' ' => {
@@ -560,9 +469,143 @@ pub fn load(path: &PathBuf) -> LevelMap {
         mesh,
         colliders,
         start_pos: start,
-        map_string: map,
+        map_string: map_string,
         level_name,
     }
+}
+
+fn add_spike(mut grid: Mesh, colliders: &mut Vec<BoxCollider>) -> Mesh {
+    grid = grid + Mesh::new(Vec::from(SPIKE));
+    colliders.push(BoxCollider::new(
+        SPIKE_COLLIDER[0],
+        SPIKE_COLLIDER[1],
+        Some("death"),
+    ));
+    return grid;
+}
+
+fn add_wall(
+    level: usize,
+    maps: &Vec<Vec<&str>>,
+    z: usize,
+    x: usize,
+    mut grid: Mesh,
+    rows: &Vec<&str>,
+    row: &&str,
+    colliders_grid: &mut Vec<BoxCollider>,
+) -> Mesh {
+    // Adding the visible face
+    if level == maps.len() - 1
+        || ![Some('X'), Some('.'), Some('v'), Some('S'), Some('E')]
+            .contains(&maps[level + 1][z].chars().nth(x))
+    {
+        // add top wall
+        grid = grid + Mesh::new(Vec::from(WALL[0]));
+    }
+    if level != 0 && maps[level - 1][z].chars().nth(x) != Some('X') {
+        //add under-wall
+        grid = grid + Mesh::new(Vec::from(WALL[1]));
+    }
+    if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
+        // add upper wall
+        grid = grid + Mesh::new(Vec::from(WALL[2]));
+    }
+    if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
+        // add bottom wall
+        grid = grid + Mesh::new(Vec::from(WALL[3]));
+    }
+    if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
+        // add left wall
+        grid = grid + Mesh::new(Vec::from(WALL[4]));
+    }
+    if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
+        // add right wall
+        grid = grid + Mesh::new(Vec::from(WALL[5]));
+    }
+
+    colliders_grid.push(BoxCollider::new(WALL_COLLIDER[0], WALL_COLLIDER[1], None));
+    return grid;
+}
+
+fn add_half_wall(
+    mut grid: Mesh,
+    level: usize,
+    maps: &Vec<Vec<&str>>,
+    z: usize,
+    x: usize,
+    rows: &Vec<&str>,
+    row: &&str,
+    colliders_grid: &mut Vec<BoxCollider>,
+) -> Mesh {
+    // Adding the visible face
+    // add top wall
+    grid = grid + Mesh::new(Vec::from(HALF_WALL[0]));
+    if level != 0 && maps[level - 1][z].chars().nth(x) != Some('X') {
+        //add under-wall
+        grid = grid + Mesh::new(Vec::from(HALF_WALL[1]));
+    }
+
+    if z != 0 && rows[z - 1].chars().nth(x) != Some('X') {
+        // add upper wall
+        grid = grid + Mesh::new(Vec::from(HALF_WALL[2]));
+    }
+    if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('X') {
+        // add bottom wall
+        grid = grid + Mesh::new(Vec::from(HALF_WALL[3]));
+    }
+    if x != 0 && rows[z].chars().nth(x - 1) != Some('X') {
+        // add left wall
+        grid = grid + Mesh::new(Vec::from(HALF_WALL[4]));
+    }
+    if x != row.len() - 1 && rows[z].chars().nth(x + 1) != Some('X') {
+        // add right wall
+        grid = grid + Mesh::new(Vec::from(HALF_WALL[5]));
+    }
+
+    colliders_grid.push(BoxCollider::new(
+        HALF_WALL_COLLIDER[0],
+        HALF_WALL_COLLIDER[1],
+        None,
+    ));
+    return grid;
+}
+
+fn add_floor(
+    mut grid: Mesh,
+    level: usize,
+    x: usize,
+    row: &&str,
+    z: usize,
+    rows: &Vec<&str>,
+    colliders_grid: &mut Vec<BoxCollider>,
+) -> Mesh {
+    // add floor
+    // add lower section (roof)
+    grid = grid + Mesh::new(Vec::from(FLOOR[0]));
+    if level != 0 {
+        grid = grid + Mesh::new(Vec::from(FLOOR[1]));
+    }
+    if x != 0 && row.chars().nth(x - 1) != Some('.') {
+        // add left floor wall
+        grid = grid + Mesh::new(Vec::from(FLOOR[2]));
+    }
+    if x != row.len() - 1 && row.chars().nth(x + 1) != Some('.') {
+        // add right floor wall
+        grid = grid + Mesh::new(Vec::from(FLOOR[3]));
+    }
+    if z != 0 && rows[z - 1].chars().nth(x) != Some('.') {
+        // add front floor wall
+        grid = grid + Mesh::new(Vec::from(FLOOR[4]));
+    }
+    if z != rows.len() - 1 && rows[z + 1].chars().nth(x) != Some('.') {
+        // add back floor wall
+        grid = grid + Mesh::new(Vec::from(FLOOR[5]));
+    }
+
+    // add collider to colliders
+
+    colliders_grid.push(BoxCollider::new(FLOOR_COLLIDER[0], FLOOR_COLLIDER[1], None));
+    return grid;
 }
 
 // #[cfg(test)]

@@ -2,7 +2,7 @@ use crate::{camera::Camera, mat::*};
 use crossterm;
 use rayon::prelude::*;
 
-pub const RENDER_DIST: f64 = 35.;
+pub const RENDER_DIST: f64 = 30.;
 
 pub fn get_terminal_size() -> (usize, usize) {
     let (w, h) = crossterm::terminal::size().unwrap();
@@ -52,6 +52,11 @@ impl Screen {
     fn flush(&mut self, ascii: bool) {
         // Create new string buffer
         let mut buffer = String::new();
+        let mut color = Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 0.,
+        };
         // Iterate through buffer
         for y in 0..self.buffer.len() {
             for x in 0..self.buffer[y].len() {
@@ -72,20 +77,28 @@ impl Screen {
                     let s = (s as usize).clamp(0, chars.len() - 1);
                     c = chars[s];
                 }
-                buffer += &format!(
-                    "\x1b[{command};2;{};{};{}m{c}",
-                    col.x as u8, col.y as u8, col.z as u8
-                )
+                if col != color {
+                    buffer += &format!(
+                        "\x1b[{command};2;{};{};{}m{c}",
+                        col.x as u8, col.y as u8, col.z as u8
+                    );
+                    color = col;
+                } else {
+                    buffer += " ";
+                }
             }
-            buffer += "\r\n";
+            buffer += "\x1b[48;2;0;0;0m\r\n";
         }
 
         //Move cursor home and print string buffer
         print!("\x1b[H{}", buffer);
 
         let (w, h) = get_terminal_size();
-        self.w = w as usize;
-        self.h = h as usize - 1;
+        if self.w != w as usize || self.h != h as usize - 1 {
+            print!("\x1b[2J\r");
+            self.w = w as usize;
+            self.h = h as usize - 1;
+        }
 
         // clear buffer
         self.buffer = vec![
