@@ -59,7 +59,7 @@ impl Game {
 
         // Get an output stream handle to the default physical sound device
         let (_stream, background_audio_handle) = OutputStream::try_default().unwrap();
-        audio::play_audio(&background_audio_handle, "./sounds/background.mp3");
+        audio::audio_loop(&background_audio_handle, "./sounds/background.mp3");
 
         loop {
             // reset timer

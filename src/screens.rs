@@ -1,6 +1,7 @@
 use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
-use crossterm;
+use crossterm::cursor::Hide;
+use crossterm::{self, ExecutableCommand};
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use rodio::OutputStreamHandle;
 use rodio::{source::Source, Decoder, OutputStream};
@@ -60,18 +61,18 @@ const TITLE_L: &str = r#"                  ___           ___           ___      
  \__\/  \:\   \  \::/ /:/   \  \::/~~~~   \  \:\       \__\/  \:\   \  \::/~~~~   \  \::/       \  \:\  /:/   \  \::/~~~~ 
       \  \:\   \  \:\/:/     \  \:\        \  \:\           \  \:\   \  \:\        \  \:\        \  \:\/:/     \  \:\     
        \__\/    \  \::/       \  \:\        \  \:\           \__\/    \  \:\        \  \:\        \  \::/       \  \:\    
-                 \__\/         \__\/         \__\/                     \__\/         \__\/         \__\/         \__\/    "#;
+                 \__\/         \__\/         \__\/                     \__\/         \__\/         \__\/         \__\/    "#; // min 140
 
 const TITLE_S: &str = r#" _____ ______________  ______________  ___  _____  _   __
 |_   _|  ___| ___ \  \/  |_   _| ___ \/ _ \/  __ \| | / /
   | | | |__ | |_/ / .  . | | | | |_/ / /_\ \ /  \/| |/ / 
   | | |  __||    /| |\/| | | | |    /|  _  | |    |    \ 
   | | | |___| |\ \| |  | | | | | |\ \| | | | \__/\| |\  \
-  \_/ \____/\_| \_\_|  |_/ \_/ \_| \_\_| |_/\____/\_| \_/"#;
+  \_/ \____/\_| \_\_|  |_/ \_/ \_| \_\_| |_/\____/\_| \_/"#; // min 100
 
 const TITLE_XS: &str = r#"___ ____ ____ _  _ ___ ____ ____ ____ _  _ 
  |  |___ |__/ |\/|  |  |__/ |__| |    |_/  
- |  |___ |  \ |  |  |  |  \ |  | |___ | \_ "#;
+ |  |___ |  \ |  |  |  |  \ |  | |___ | \_ "#; // min 70
 
 const TITLE_M: &str = r#" ________  ________  _______   __       __  ________  _______    ______    ______   __    __ 
 /        |/        |/       \ /  \     /  |/        |/       \  /      \  /      \ /  |  /  |
@@ -81,7 +82,7 @@ $$$$$$$$/ $$$$$$$$/ $$$$$$$  |$$  \   /$$ |$$$$$$$$/ $$$$$$$  |/$$$$$$  |/$$$$$$
    $$ |   $$$$$/    $$$$$$$  |$$ $$ $$/$$ |   $$ |   $$$$$$$  |$$$$$$$$ |$$ |   __ $$$$$  \  
    $$ |   $$ |_____ $$ |  $$ |$$ |$$$/ $$ |   $$ |   $$ |  $$ |$$ |  $$ |$$ \__/  |$$ |$$  \ 
    $$ |   $$       |$$ |  $$ |$$ | $/  $$ |   $$ |   $$ |  $$ |$$ |  $$ |$$    $$/ $$ | $$  |
-   $$/    $$$$$$$$/ $$/   $$/ $$/      $$/    $$/    $$/   $$/ $$/   $$/  $$$$$$/  $$/   $$/ "#;
+   $$/    $$$$$$$$/ $$/   $$/ $$/      $$/    $$/    $$/   $$/ $$/   $$/  $$$$$$/  $$/   $$/ "#; // min 130
 
 pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     let device_state = DeviceState::new();
@@ -97,12 +98,15 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     if levels.len() < 7 {
         box_height = level_names.len() as u16;
     }
-
-    // let start_x = screen_width / 2 - box_width / 2;
-    // let start_y = screen_height / 2 - box_height / 2;
-
+    let message = vec![
+        "Use |\u{1F845} | and |\u{1F847} | to navigate menu.",
+        "Press enter to play.\n",
+        " ",
+        "How to win:",
+        "Find the end.",
+    ];
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
-    audio::play_audio(&audio_handle, "./sounds/menu.mp3");
+    audio::audio_loop(&audio_handle, "./sounds/menu.mp3");
 
     // print background image
     print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
@@ -115,11 +119,24 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         )
     }
 
+    let (title, gap) = match screen_width {
+        125..=u16::MAX => (TITLE_L, 2),
+        95..125 => (TITLE_M, 2),
+        59..95 => (TITLE_S, 1),
+        45..59 => (TITLE_XS, 1),
+        0..45 => ("", 0),
+    };
+
+    if title == "" {
+        panic!("please expand your terminal and try again.");
+    };
+
     // print title
-    let lines: Vec<&str> = TITLE_L.split("\n").collect();
+    let lines: Vec<&str> = title.split("\n").collect();
     let menu_width = lines[1].len() as u16;
-    let mut y = 3;
+    let mut y: u16 = 0;
     let x = screen_width / 2 - menu_width / 2;
+    y += gap;
     for line in &lines {
         println!(
             "{esc}[{};{}H{}",
@@ -132,7 +149,8 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     }
 
     // print controls
-    y += 2;
+
+    y += gap;
     println!(
         "{esc}[{};{}H{:-^3$}",
         y,
@@ -142,7 +160,9 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         esc = 27 as char
     );
     y += 1;
-    println!(
+
+    if title == TITLE_L {
+        println!(
         "{esc}[{};{}H{:^3$}",
         y,
         screen_width / 2 - menu_width / 2,
@@ -150,6 +170,62 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         menu_width as usize,
         esc = 27 as char
     );
+    } else if title == TITLE_M {
+        println!(
+        "{esc}[{};{}H{:^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "|W| |A| |S| |D| - move   |\u{1F844} | |\u{1F845} | |\u{1F847} | |\u{1F846} | - rotate camera   | [SPACEBAR] | - jump",
+        menu_width as usize,
+        esc = 27 as char
+    );
+        y += 1;
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "|M| - view map   |E| - exit",
+            menu_width as usize,
+            esc = 27 as char
+        );
+    } else if title == TITLE_S {
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "WASD - move | \u{1F844} \u{1F845} \u{1F847} \u{1F846}  - rotate camera | [SPACE] - jump",
+            menu_width as usize,
+            esc = 27 as char
+        );
+        y += 1;
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "M - map | E - exit",
+            menu_width as usize,
+            esc = 27 as char
+        );
+    } else if title == TITLE_XS {
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "WASD - move | \u{1F844} \u{1F845} \u{1F847} \u{1F846}  - rotate camera",
+            menu_width as usize,
+            esc = 27 as char
+        );
+        y += 1;
+        println!(
+            "{esc}[{};{}H{:^3$}",
+            y,
+            screen_width / 2 - menu_width / 2,
+            "[SPACE] - jump | M - map | E - exit",
+            menu_width as usize,
+            esc = 27 as char
+        );
+    }
+
     y += 1;
     println!(
         "{esc}[{};{}H{:-^3$}",
@@ -161,44 +237,33 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     );
 
     // print instructions
-    y += 2;
+    y += gap;
+    let mut chopped_message = vec![];
+    for line in message {
+        let mut chopped_line = line
+            .chars()
+            .collect::<Vec<char>>()
+            .chunks(menu_width as usize / 2 - gap as usize)
+            .map(|c| c.iter().collect::<String>())
+            .collect::<Vec<String>>();
 
-    println!(
-        "{esc}[{};{}H{}",
-        y,
-        screen_width / 2 + 2,
-        "Use |\u{1F845} | and |\u{1F847} | to navigate menu.",
-        esc = 27 as char
-    );
-    println!(
-        "{esc}[{};{}H{}",
-        y + 1,
-        screen_width / 2 + 2,
-        "Press enter to play.\n",
-        esc = 27 as char
-    );
+        chopped_message.append(&mut chopped_line);
+    }
 
-    println!(
-        "{esc}[{};{}H{}",
-        y + 3,
-        screen_width / 2 + 2,
-        "How to win:",
-        esc = 27 as char
-    );
-
-    println!(
-        "{esc}[{};{}H{}",
-        y + 4,
-        screen_width / 2 + 2,
-        "Find the end.",
-        esc = 27 as char
-    );
+    for (n, line) in chopped_message.iter().enumerate() {
+        println!(
+            "{esc}[{};{}H{}",
+            y + n as u16,
+            screen_width / 2 + gap,
+            line,
+            esc = 27 as char
+        );
+    }
 
     let box_width: u16 = menu_width / 2 - 2;
 
     loop {
-        // print menu
-
+        // PRINT BOX
         // box upper line
         println!(
             "{esc}[{};{}H*{:-^3$}*",
@@ -228,7 +293,7 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             }
             println!(
                 "{esc}[{};{}H|{:^3$}|",
-                y + 1 + (i - lowest) as u16,
+                y + 1 + (i - lowest),
                 x,
                 level_names[i as usize].to_str().unwrap(),
                 (box_width - 2) as usize,
@@ -293,7 +358,7 @@ pub fn game_over(arg: &str) -> bool {
 
     loop {
         // print background image
-        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
         for row in 0..=screen_height {
             println!(
                 "{}\r",
@@ -426,7 +491,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
 
     loop {
         // print background image
-        print!("{esc}[H{esc}[48;2;105;105;105m", esc = 27 as char);
+        print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
         for row in 0..=screen_height {
             println!(
                 "{}\r",

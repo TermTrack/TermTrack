@@ -495,14 +495,18 @@ fn add_wall(
     colliders_grid: &mut Vec<BoxCollider>,
 ) -> Mesh {
     // Adding the visible face
-    if level == maps.len() - 1
-        || ![Some('X'), Some('.'), Some('v'), Some('S'), Some('E')]
-            .contains(&maps[level + 1][z].chars().nth(x))
+    if level >= maps.len() - 1
+        || maps[level + 1].get(z) != None
+            && ![Some('X'), Some('.'), Some('v'), Some('S'), Some('E')]
+                .contains(&maps[level + 1][z].chars().nth(x))
     {
         // add top wall
         grid = grid + Mesh::new(Vec::from(WALL[0]));
     }
-    if level != 0 && maps[level - 1][z].chars().nth(x) != Some('X') {
+    if level != 0
+        && maps[level - 1].get(z) != None
+        && maps[level - 1][z].chars().nth(x) != Some('X')
+    {
         //add under-wall
         grid = grid + Mesh::new(Vec::from(WALL[1]));
     }
@@ -540,7 +544,10 @@ fn add_half_wall(
     // Adding the visible face
     // add top wall
     grid = grid + Mesh::new(Vec::from(HALF_WALL[0]));
-    if level != 0 && maps[level - 1][z].chars().nth(x) != Some('X') {
+    if level != 0
+        && maps[level - 1].get(z) != None
+        && maps[level - 1][z].chars().nth(x) != Some('X')
+    {
         //add under-wall
         grid = grid + Mesh::new(Vec::from(HALF_WALL[1]));
     }

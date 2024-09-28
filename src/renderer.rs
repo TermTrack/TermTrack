@@ -22,8 +22,6 @@ impl Screen {
     pub fn new() -> Self {
         let (w, h) = get_terminal_size();
         let raw = crossterm::terminal::enable_raw_mode().unwrap();
-        let mut stdout = std::io::stdout();
-        crossterm::execute!(stdout, crossterm::cursor::Hide).unwrap();
         let h = h - 1;
 
         //clear screen
