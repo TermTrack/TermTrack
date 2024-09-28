@@ -1,3 +1,5 @@
+use crossterm::cursor::Hide;
+use crossterm::{self, ExecutableCommand};
 use device_query::{self, DeviceQuery, DeviceState, Keycode};
 use loader::*;
 use mat::Vec3;
@@ -23,7 +25,6 @@ fn main() {
     let level_dir = env::args().collect::<Vec<String>>()[1].clone();
     let entries = fs::read_dir(level_dir).unwrap();
     let levels: Vec<PathBuf> = entries.map(|e| e.unwrap().path()).collect();
-    // Get an output stream handle to the default physical sound device
     let (_stream, stream_handle) = OutputStream::try_default().expect("couldnt get sound handle!");
     let _ = crossterm::terminal::enable_raw_mode().unwrap();
     loop {

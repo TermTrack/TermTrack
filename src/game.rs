@@ -209,8 +209,8 @@ impl Game {
 
         // Get an output stream handle to the default physical sound device
         let (_stream, level_audio_handle) = OutputStream::try_default().unwrap();
-        audio::play_audio(&level_audio_handle, "./sounds/background.mp3");
-        let walk = audio::create_infinite_sink(&level_audio_handle, "./sounds/walking.mp3");
+        audio::audio_loop(&level_audio_handle, "./sounds/background.mp3");
+        let walk = audio::create_infinite_sink(&level_audio_handle, "./sounds/walk.mp3");
         walk.pause();
 
         loop {

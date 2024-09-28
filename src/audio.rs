@@ -25,6 +25,16 @@ pub fn create_infinite_sink(level_audio_handle: &OutputStreamHandle, path: &str)
     return sink;
 }
 
+pub fn audio_loop(stream_handle: &OutputStreamHandle, path: &str) {
+    // Load a sound from a file, using a path relative to Cargo.toml
+    let file = BufReader::new(File::open(path).unwrap());
+    // Decode that sound file into a source
+    let source = Decoder::new(file).unwrap();
+    let source = source.repeat_infinite();
+    // Play the sound directly on the device
+    stream_handle.play_raw(source.convert_samples());
+}
+
 // #[cfg(test)]
 
 // mod tests {
