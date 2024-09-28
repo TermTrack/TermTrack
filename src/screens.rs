@@ -50,7 +50,7 @@ const keys_keycode: [(Keycode, &str, &str); 37] = [
     (Keycode::Space, " ", " "),
 ];
 
-const title_l: &str = r#"                   ___           ___           ___                       ___           ___           ___           ___     
+const TITLE_L: &str = r#"                  ___           ___           ___                       ___           ___           ___           ___     
       ___        /  /\         /  /\         /__/\          ___        /  /\         /  /\         /  /\         /__/|    
      /  /\      /  /:/_       /  /::\       |  |::\        /  /\      /  /::\       /  /::\       /  /:/        |  |:|    
     /  /:/     /  /:/ /\     /  /:/\:\      |  |:|:\      /  /:/     /  /:/\:\     /  /:/\:\     /  /:/         |  |:|    
@@ -62,18 +62,18 @@ const title_l: &str = r#"                   ___           ___           ___     
        \__\/    \  \::/       \  \:\        \  \:\           \__\/    \  \:\        \  \:\        \  \::/       \  \:\    
                  \__\/         \__\/         \__\/                     \__\/         \__\/         \__\/         \__\/    "#;
 
-const title_s: &str = r#" _____ ______________  ______________  ___  _____  _   __
+const TITLE_S: &str = r#" _____ ______________  ______________  ___  _____  _   __
 |_   _|  ___| ___ \  \/  |_   _| ___ \/ _ \/  __ \| | / /
   | | | |__ | |_/ / .  . | | | | |_/ / /_\ \ /  \/| |/ / 
   | | |  __||    /| |\/| | | | |    /|  _  | |    |    \ 
   | | | |___| |\ \| |  | | | | | |\ \| | | | \__/\| |\  \
   \_/ \____/\_| \_\_|  |_/ \_/ \_| \_\_| |_/\____/\_| \_/"#;
 
-const title_xs: &str = r#"___ ____ ____ _  _ ___ ____ ____ ____ _  _ 
+const TITLE_XS: &str = r#"___ ____ ____ _  _ ___ ____ ____ ____ _  _ 
  |  |___ |__/ |\/|  |  |__/ |__| |    |_/  
  |  |___ |  \ |  |  |  |  \ |  | |___ | \_ "#;
 
-const title_m: &str = r#" ________  ________  _______   __       __  ________  _______    ______    ______   __    __ 
+const TITLE_M: &str = r#" ________  ________  _______   __       __  ________  _______    ______    ______   __    __ 
 /        |/        |/       \ /  \     /  |/        |/       \  /      \  /      \ /  |  /  |
 $$$$$$$$/ $$$$$$$$/ $$$$$$$  |$$  \   /$$ |$$$$$$$$/ $$$$$$$  |/$$$$$$  |/$$$$$$  |$$ | /$$/ 
    $$ |   $$ |__    $$ |__$$ |$$$  \ /$$$ |   $$ |   $$ |__$$ |$$ |__$$ |$$ |  $$/ $$ |/$$/  
@@ -93,37 +93,117 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
     let screen_height = screen_height as u16;
-    let box_width: u16 = 30;
     let mut box_height = 7;
     if levels.len() < 7 {
         box_height = level_names.len() as u16;
     }
 
-    let start_x = screen_width / 2 - box_width / 2;
-    let start_y = screen_height / 2 - box_height / 2;
+    // let start_x = screen_width / 2 - box_width / 2;
+    // let start_y = screen_height / 2 - box_height / 2;
 
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
     audio::play_audio(&audio_handle, "./sounds/menu.mp3");
 
-    loop {
-        // print background image
-        print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-        for row in 0..=screen_height {
-            println!(
-                "{}\r",
-                std::iter::repeat(" ")
-                    .take(screen_width as usize)
-                    .collect::<String>()
-            )
-        }
+    // print background image
+    print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
+    for row in 0..=screen_height {
+        println!(
+            "{}\r",
+            std::iter::repeat(" ")
+                .take(screen_width as usize)
+                .collect::<String>()
+        )
+    }
 
+    // print title
+    let lines: Vec<&str> = TITLE_L.split("\n").collect();
+    let menu_width = lines[1].len() as u16;
+    let mut y = 3;
+    let x = screen_width / 2 - menu_width / 2;
+    for line in &lines {
+        println!(
+            "{esc}[{};{}H{}",
+            y,
+            screen_width / 2 - (line.len() as u16) / 2,
+            line,
+            esc = 27 as char
+        );
+        y += 1;
+    }
+
+    // print controls
+    y += 2;
+    println!(
+        "{esc}[{};{}H{:-^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "",
+        menu_width as usize,
+        esc = 27 as char
+    );
+    y += 1;
+    println!(
+        "{esc}[{};{}H{:^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "|W| |A| |S| |D| - move   |\u{1F844} | |\u{1F845} | |\u{1F847} | |\u{1F846} | - rotate camera   | [SPACEBAR] | - jump   |M| - view map   |E| - exit",
+        menu_width as usize,
+        esc = 27 as char
+    );
+    y += 1;
+    println!(
+        "{esc}[{};{}H{:-^3$}",
+        y,
+        screen_width / 2 - menu_width / 2,
+        "",
+        menu_width as usize,
+        esc = 27 as char
+    );
+
+    // print instructions
+    y += 2;
+
+    println!(
+        "{esc}[{};{}H{}",
+        y,
+        screen_width / 2 + 2,
+        "Use |\u{1F845} | and |\u{1F847} | to navigate menu.",
+        esc = 27 as char
+    );
+    println!(
+        "{esc}[{};{}H{}",
+        y + 1,
+        screen_width / 2 + 2,
+        "Press enter to play.\n",
+        esc = 27 as char
+    );
+
+    println!(
+        "{esc}[{};{}H{}",
+        y + 3,
+        screen_width / 2 + 2,
+        "How to win:",
+        esc = 27 as char
+    );
+
+    println!(
+        "{esc}[{};{}H{}",
+        y + 4,
+        screen_width / 2 + 2,
+        "Find the end.",
+        esc = 27 as char
+    );
+
+    let box_width: u16 = menu_width / 2 - 2;
+
+    loop {
         // print menu
 
         // box upper line
         println!(
             "{esc}[{};{}H*{:-^3$}*",
-            start_y,
-            start_x,
+            y,
+            x,
             "",
             (box_width - 2) as usize,
             esc = 27 as char
@@ -144,12 +224,12 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
 
         for i in lowest..highest {
             if i == chosen_level {
-                print!("{esc}[48;2;255;0;0m", esc = 27 as char);
+                print!("{esc}[48;2;46;46;46m", esc = 27 as char);
             }
             println!(
                 "{esc}[{};{}H|{:^3$}|",
-                start_y + 1 + (i - lowest) as u16,
-                start_x,
+                y + 1 + (i - lowest) as u16,
+                x,
                 level_names[i as usize].to_str().unwrap(),
                 (box_width - 2) as usize,
                 esc = 27 as char
@@ -160,8 +240,8 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         // box lower line
         println!(
             "{esc}[{};{}H*{:-^3$}*",
-            start_y + box_height + 1,
-            start_x,
+            y + box_height + 1,
+            x,
             "",
             (box_width - 2) as usize,
             esc = 27 as char
@@ -174,15 +254,19 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             let keys = device_state.get_keys();
 
             if keys.contains(&Keycode::Down) {
-                chosen_level += 1;
-                chosen_level = chosen_level.min(level_names.len() as u16 - 1);
-                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
-                break;
+                if chosen_level != level_names.len() as u16 - 1 {
+                    chosen_level += 1;
+                    //chosen_level = chosen_level.min(level_names.len() as u16 - 1);
+                    audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                    break;
+                }
             }
             if keys.contains(&Keycode::Up) {
-                chosen_level = chosen_level.checked_sub(1).unwrap_or(0);
-                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
-                break;
+                if chosen_level != 0 {
+                    chosen_level = chosen_level.checked_sub(1).unwrap_or(0);
+                    audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                    break;
+                }
             }
             if keys.contains(&Keycode::Enter) {
                 return chosen_level as usize;
