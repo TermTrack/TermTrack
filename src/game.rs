@@ -247,7 +247,9 @@ impl Game {
                 let time1 = time.elapsed();
                 let timer_1 = level_timer.elapsed();
 
-                screens::exit();
+                if screens::exit() {
+                    return Err("menu");
+                };
                 time = Instant::now().checked_sub(time1).unwrap();
                 level_timer = Instant::now().checked_sub(timer_1).unwrap();
             }

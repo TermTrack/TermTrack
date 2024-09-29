@@ -509,7 +509,9 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
                 return chosen_level as usize;
             }
             if keys.contains(&Keycode::E) {
-                screens::exit();
+                if screens::exit() {
+                    exit_app();
+                };
                 menu_print();
                 break;
             }
@@ -841,7 +843,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
     }
 }
 
-pub fn exit() {
+pub fn exit() -> bool {
     let device_state = DeviceState::new();
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
@@ -941,24 +943,23 @@ pub fn exit() {
             }
 
             if keys.contains(&Keycode::Enter) {
-                if exit {
-                    let _ = crossterm::terminal::disable_raw_mode();
-
-                    println!("\x1b[2J\x1b[H\x1b[48;2;0;0;0mGame closing\r");
-                    let _ = thread::spawn(|| {
-                        for x in stdin().bytes() {
-                            let _ = x;
-                        }
-                    });
-                    thread::sleep_ms(100);
-                    println!("\x1b[2J\x1b[H\x1b[48;2;0;0;0mGame Closed\r");
-
-                    std::process::exit(0);
-                } else {
-                    thread::sleep_ms(200);
-                    return;
-                }
+                return exit;
             }
         }
     }
+}
+
+fn exit_app() {
+    let _ = crossterm::terminal::disable_raw_mode();
+
+    println!("\x1b[2J\x1b[H\x1b[48;2;0;0;0mGame closing\r");
+    let _ = thread::spawn(|| {
+        for x in stdin().bytes() {
+            let _ = x;
+        }
+    });
+    thread::sleep_ms(100);
+    println!("\x1b[2J\x1b[H\x1b[48;2;0;0;0mGame Closed\r");
+
+    std::process::exit(0);
 }

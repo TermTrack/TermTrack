@@ -65,6 +65,7 @@ fn main() {
                             continue;
                         }
                     }
+                    "menu" => (),
                     _ => {
                         if screens::game_over("You failed!") {
                             continue;
