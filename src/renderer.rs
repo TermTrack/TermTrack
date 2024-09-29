@@ -1,5 +1,4 @@
 use crate::{camera::Camera, mat::*};
-use crossterm;
 use rayon::prelude::*;
 
 pub const RENDER_DIST: f64 = 30.;
@@ -39,7 +38,7 @@ impl Screen {
             h
         ];
 
-        Screen { w: w, h: h, buffer }
+        Screen { w, h, buffer }
     }
 
     fn flush(&mut self, ascii: bool) {
@@ -131,12 +130,10 @@ impl Screen {
                 let ray_o = camera.pos + pixel_coords;
                 for tri in &tris {
                     let (hit, distance) = tri.hit_geo(ray_o, ray_dir);
-                    if hit {
-                        if distance < min_dist {
-                            min_dist = distance;
+                    if hit && distance < min_dist {
+                        min_dist = distance;
 
-                            color = tri.color;
-                        }
+                        color = tri.color;
                     }
                 }
                 color = color * (1. - min_dist / RENDER_DIST);
@@ -215,12 +212,10 @@ impl Screen {
                 let mut closet_idx = None;
                 for (idx, tri) in tris.iter().enumerate() {
                     let (hit, distance) = tri.hit_mt(ray_o, ray_dir);
-                    if hit {
-                        if distance < min_dist {
-                            min_dist = distance;
+                    if hit && distance < min_dist {
+                        min_dist = distance;
 
-                            closet_idx = Some(idx);
-                        }
+                        closet_idx = Some(idx);
                     }
                 }
                 if let Some(idx) = closet_idx {
@@ -240,7 +235,7 @@ impl Screen {
             // true for ascii art
             // self.amplify_edges();
             self.flush(false);
-            self.print_info(camera, &extra.to_string())
+            self.print_info(camera, extra)
         }
     }
 
@@ -252,7 +247,7 @@ impl Screen {
         let map = map_as_vec_of_floors(map);
 
         let mut map: Vec<&str> = map
-            .get((-position.y.div_euclid(grid_width as f64)) as usize)
+            .get((-position.y.div_euclid(grid_width)) as usize)
             .unwrap_or(map.last().unwrap_or(&vec![]))
             .clone();
 
@@ -315,7 +310,7 @@ impl Screen {
 }
 
 pub fn map_as_vec_of_floors(map: &str) -> Vec<Vec<&str>> {
-    let mut map: Vec<Vec<&str>> = map
+    let map: Vec<Vec<&str>> = map
         .split("sep\n")
         .map(|x| x.split("\n").collect())
         .collect();

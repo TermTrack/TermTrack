@@ -1,9 +1,9 @@
-use std::io::{self, stdin, BufReader, Read};
+use std::io::{stdin, Read};
 use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
+use rodio::OutputStream;
 use rodio::OutputStreamHandle;
-use rodio::{source::Source, Decoder, OutputStream};
 use serde_json::{json, Value};
 
 use crate::{audio, screens};
@@ -108,7 +108,7 @@ pub fn menu_print() {
         0..45 => ("", 0),
     };
 
-    if title == "" {
+    if title.is_empty() {
         panic!("please expand your terminal and try again.");
     };
 
@@ -479,19 +479,15 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         loop {
             let keys = device_state.get_keys();
 
-            if keys.contains(&Keycode::Down) {
-                if chosen_level != level_names.len() as u16 - 1 {
-                    chosen_level += 1;
-                    audio::play_audio(&audio_handle, "./sounds/pop.mp3");
-                    break;
-                }
+            if keys.contains(&Keycode::Down) && chosen_level != level_names.len() as u16 - 1 {
+                chosen_level += 1;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                break;
             }
-            if keys.contains(&Keycode::Up) {
-                if chosen_level != 0 {
-                    chosen_level = chosen_level.saturating_sub(1);
-                    audio::play_audio(&audio_handle, "./sounds/pop.mp3");
-                    break;
-                }
+            if keys.contains(&Keycode::Up) && chosen_level != 0 {
+                chosen_level = chosen_level.saturating_sub(1);
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                break;
             }
             if keys.contains(&Keycode::Enter) {
                 // audio::play_audio(&audio_handle, "./sounds/enter.mp3");
@@ -516,7 +512,7 @@ pub fn game_over(arg: &str) -> bool {
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
 
     let box_width: u16 = 30.max(arg.len() as u16);
-    let mut box_height = 5;
+    let box_height = 5;
 
     let start_x = screen_width / 2 - box_width / 2;
     let start_y = screen_height / 2 - box_height / 2;
@@ -680,7 +676,7 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 1,
             start_x,
-            "You Won!",
+            "You won!",
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -688,7 +684,7 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 2,
             start_x,
-            format!("time: {:.2}s", time),
+            format!("Time: {:.2}s", time),
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -696,7 +692,7 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 3,
             start_x,
-            "Choose Name to save result",
+            "Choose name to save result:",
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -716,7 +712,7 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 5,
             start_x,
-            "---leaders---",
+            "---LEADERS---",
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -748,7 +744,7 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
             "{esc}[{};{}H|{: ^3$}|",
             start_y + box_height - 2,
             start_x,
-            "try again?",
+            "Try again?",
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -832,7 +828,8 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
                 break;
             }
             if keys.contains(&Keycode::E) && chosen != 0 {
-                exit()
+                exit();
+                break;
             }
         }
     }
@@ -845,7 +842,7 @@ pub fn exit() {
     let screen_height = screen_height as u16;
 
     let box_width: u16 = 30;
-    let mut box_height = 5;
+    let box_height = 5;
 
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
 
@@ -947,7 +944,7 @@ pub fn exit() {
 
                     std::process::exit(0);
                 } else {
-                    thread::sleep_ms(200);
+                    thread::sleep_ms(100);
                     return;
                 }
             }

@@ -335,7 +335,7 @@ pub fn check_collision(
 
             vel.x = 0.;
             next_pc = pcollider.clone();
-            next_pc.translate(pos.clone());
+            next_pc.translate(*pos);
         }
     }
     next_pc.translate(Vec3 {

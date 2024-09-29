@@ -1,10 +1,9 @@
-use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
-use rayon::iter::IntoParallelIterator;
+use device_query::{DeviceQuery, DeviceState, Keycode};
 use rodio::OutputStreamHandle;
 
-use rodio::{source::Source, Decoder, OutputStream};
+use rodio::{source::Source, OutputStream};
 
-use crate::loader::{self, load};
+use crate::loader::{self};
 use crate::renderer::{self, *};
 use crate::GW;
 use crate::{audio, LevelMap};
@@ -128,12 +127,12 @@ impl Enemy {
     pub fn get_collider(&self) -> BoxCollider {
         let mut col = self.collider.clone();
         col.translate(self.pos);
-        return col;
+        col
     }
 
     pub fn translate(mut self, to: Vec3) -> Self {
         self.pos = self.pos + to;
-        return self;
+        self
     }
 
     pub fn get_mesh(&self) -> Mesh {
@@ -158,7 +157,7 @@ impl Enemy {
                     y: self.pos.y,
                 };
         }
-        return mesh;
+        mesh
     }
 }
 
@@ -275,15 +274,11 @@ impl Game {
             if keys.contains(&Keycode::Right) {
                 self.camera.rotation.x += ROTATION_SPEED * dt;
             }
-            if keys.contains(&Keycode::Up) {
-                if self.camera.rotation.y < 1.5 {
-                    self.camera.rotation.y += ROTATION_SPEED * dt;
-                }
+            if keys.contains(&Keycode::Up) && self.camera.rotation.y < 1.5 {
+                self.camera.rotation.y += ROTATION_SPEED * dt;
             }
-            if keys.contains(&Keycode::Down) {
-                if self.camera.rotation.y > -1.5 {
-                    self.camera.rotation.y -= ROTATION_SPEED * dt;
-                }
+            if keys.contains(&Keycode::Down) && self.camera.rotation.y > -1.5 {
+                self.camera.rotation.y -= ROTATION_SPEED * dt;
             }
 
             let mut v = Vec3 {
@@ -360,10 +355,8 @@ impl Game {
                 if walk.is_paused() {
                     walk.play();
                 }
-            } else {
-                if !walk.is_paused() {
-                    walk.pause();
-                }
+            } else if !walk.is_paused() {
+                walk.pause();
             }
 
             self.camera.update_pos(dt);
