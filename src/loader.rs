@@ -640,7 +640,7 @@ fn add_floor(
     x: usize,
     row: &&str,
     z: usize,
-    rows: &Vec<&str>,
+    rows: &[&str],
     colliders_grid: &mut Vec<BoxCollider>,
 ) -> Mesh {
     // add floor
@@ -669,7 +669,7 @@ fn add_floor(
     // add collider to colliders
 
     colliders_grid.push(BoxCollider::new(FLOOR_COLLIDER[0], FLOOR_COLLIDER[1], None));
-    return grid;
+    grid
 }
 
 // #[cfg(test)]

@@ -32,7 +32,7 @@ pub fn audio_loop(stream_handle: &OutputStreamHandle, path: &str) {
     let source = Decoder::new(file).unwrap();
     let source = source.repeat_infinite();
     // Play the sound directly on the device
-    stream_handle.play_raw(source.convert_samples());
+    let _ = stream_handle.play_raw(source.convert_samples());
 }
 
 // #[cfg(test)]

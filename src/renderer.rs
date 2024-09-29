@@ -34,16 +34,12 @@ impl Screen {
                     y: 0.,
                     z: 0.
                 };
-                w.into()
+                w
             ];
-            h.into()
+            h
         ];
 
-        Screen {
-            w: w.into(),
-            h: h.into(),
-            buffer,
-        }
+        Screen { w: w, h: h, buffer }
     }
 
     fn flush(&mut self, ascii: bool) {
@@ -91,10 +87,10 @@ impl Screen {
         print!("\x1b[H{}", buffer);
 
         let (w, h) = get_terminal_size();
-        if self.w != w as usize || self.h != h as usize - 1 {
+        if self.w != w || self.h != h - 1 {
             print!("\x1b[2J\r");
-            self.w = w as usize;
-            self.h = h as usize - 1;
+            self.w = w;
+            self.h = h - 1;
         }
 
         // clear buffer
@@ -192,7 +188,7 @@ impl Screen {
             }
         }
         let pruned_mesh = Mesh { tris: pruned_tris };
-        self.render_mt(&camera, &pruned_mesh, extra, print);
+        self.render_mt(camera, &pruned_mesh, extra, print);
     }
 
     pub fn render_mt(&mut self, camera: &Camera, mesh: &Mesh, extra: &str, print: bool) {
@@ -219,7 +215,6 @@ impl Screen {
                 let mut closet_idx = None;
                 for (idx, tri) in tris.iter().enumerate() {
                     let (hit, distance) = tri.hit_mt(ray_o, ray_dir);
-                    let distance = distance;
                     if hit {
                         if distance < min_dist {
                             min_dist = distance;
@@ -245,7 +240,7 @@ impl Screen {
             // true for ascii art
             // self.amplify_edges();
             self.flush(false);
-            self.print_info(camera, &format!("{extra}"))
+            self.print_info(camera, &extra.to_string())
         }
     }
 

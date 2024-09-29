@@ -10,7 +10,7 @@ use crate::{audio, screens};
 
 use crate::renderer;
 
-const keys_keycode: [(Keycode, &str, &str); 37] = [
+const KEYS_KEYCODE: [(Keycode, &str, &str); 37] = [
     (Keycode::A, "a", "A"),
     (Keycode::B, "b", "B"),
     (Keycode::C, "c", "C"),
@@ -96,13 +96,8 @@ pub fn menu_print() {
     ];
     // print background image
     print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-    for row in 0..=screen_height {
-        println!(
-            "{}\r",
-            std::iter::repeat(" ")
-                .take(screen_width as usize)
-                .collect::<String>()
-        )
+    for _row in 0..=screen_height {
+        println!("{}\r", " ".repeat(screen_width as usize),)
     }
 
     let (title, gap) = match screen_width {
@@ -275,14 +270,11 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
 
     // print background image
     print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-    for row in 0..=screen_height {
-        println!(
-            "{}\r",
-            std::iter::repeat(" ")
-                .take(screen_width as usize)
-                .collect::<String>()
-        )
+    for _row in 0..=screen_height {
+        println!("{}\r", " ".repeat(screen_width as usize),)
     }
+
+    // print title
 
     let (title, gap) = match screen_width {
         125..=u16::MAX => (TITLE_L, 2),
@@ -292,11 +284,10 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         0..45 => ("", 0),
     };
 
-    if title == "" {
+    if title.is_empty() {
         panic!("please expand your terminal and try again.");
     };
 
-    // print title
     let lines: Vec<&str> = title.split("\n").collect();
     let menu_width = lines[1].len() as u16;
     let mut y: u16 = 0;
@@ -497,7 +488,7 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             }
             if keys.contains(&Keycode::Up) {
                 if chosen_level != 0 {
-                    chosen_level = chosen_level.checked_sub(1).unwrap_or(0);
+                    chosen_level = chosen_level.saturating_sub(1);
                     audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                     break;
                 }
@@ -534,13 +525,8 @@ pub fn game_over(arg: &str) -> bool {
     loop {
         // print background image
         print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-        for row in 0..=screen_height {
-            println!(
-                "{}\r",
-                std::iter::repeat(" ")
-                    .take(screen_width as usize)
-                    .collect::<String>()
-            )
+        for _row in 0..=screen_height {
+            println!("{}\r", " ".repeat(screen_width as usize),)
         }
 
         // print menu
@@ -644,11 +630,11 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
     // get the leaderboard
     let leader_boards = fs::read_to_string("./leaderboards.json").unwrap_or(String::from("{}"));
     let mut leader_boards: Value = serde_json::from_str(&leader_boards).unwrap_or(json!({}));
-    let leader_board = match leader_boards.get_mut(&level_name) {
+    let leader_board = match leader_boards.get_mut(level_name) {
         Some(x) => x,
         None => {
             leader_boards[&level_name] = json!([]);
-            leader_boards.get_mut(&level_name).unwrap()
+            leader_boards.get_mut(level_name).unwrap()
         }
     };
     println!("{:?}", leader_board);
@@ -676,13 +662,8 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
     loop {
         // print background image
         print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-        for row in 0..=screen_height {
-            println!(
-                "{}\r",
-                std::iter::repeat(" ")
-                    .take(screen_width as usize)
-                    .collect::<String>()
-            )
+        for _row in 0..=screen_height {
+            println!("{}\r", " ".repeat(screen_width as usize),)
         }
 
         // print menu
@@ -811,12 +792,12 @@ pub fn finish(time: f64, level_name: &str) -> u8 {
         'input_loop: loop {
             let keys = device_state.get_keys();
 
-            for key in keys_keycode {
+            for key in KEYS_KEYCODE {
                 if keys.contains(&key.0) && chosen == 0 {
                     if keys.contains(&Keycode::LShift) {
-                        name += &key.2;
+                        name += key.2;
                     } else {
-                        name += &key.1;
+                        name += key.1;
                     }
                     break 'input_loop;
                 }
@@ -875,13 +856,8 @@ pub fn exit() {
     loop {
         // print background image
         print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-        for row in 0..=screen_height {
-            println!(
-                "{}\r",
-                std::iter::repeat(" ")
-                    .take(screen_width as usize)
-                    .collect::<String>()
-            )
+        for _row in 0..=screen_height {
+            println!("{}\r", " ".repeat(screen_width as usize),)
         }
 
         // print menu
