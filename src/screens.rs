@@ -622,11 +622,14 @@ pub fn game_over(arg: &str) -> bool {
             if keys.contains(&Keycode::Enter) {
                 return try_again;
             }
+            if keys.contains(&Keycode::E) {
+                exit()
+            }
         }
     }
 }
 
-pub fn finish(time: f64, level_name: &str) -> bool {
+pub fn finish(time: f64, level_name: &str) -> u8 {
     // get device state for input
     let device_state = DeviceState::new();
 
@@ -667,7 +670,8 @@ pub fn finish(time: f64, level_name: &str) -> bool {
 
     let start_x = screen_width / 2 - box_width / 2;
     let start_y = screen_height / 2 - box_height / 2;
-    let mut try_again = true;
+
+    let mut chosen = 0;
 
     loop {
         // print background image
@@ -711,10 +715,13 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 3,
             start_x,
-            "Choose Name",
+            "Choose Name to save result",
             (box_width - 2) as usize,
             esc = 27 as char
         );
+        if chosen == 0 {
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
+        }
         println!(
             "{esc}[{};{}H|{:^3$}|",
             start_y + 4,
@@ -723,6 +730,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             (box_width - 2) as usize,
             esc = 27 as char
         );
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         println!(
             "{esc}[{};{}H|{:^3$}|",
             start_y + 5,
@@ -763,7 +771,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             (box_width - 2) as usize,
             esc = 27 as char
         );
-        if try_again {
+        if chosen == 1 {
             print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
@@ -775,7 +783,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             esc = 27 as char
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
-        if !try_again {
+        if chosen == 2 {
             print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
@@ -804,7 +812,7 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             let keys = device_state.get_keys();
 
             for key in keys_keycode {
-                if keys.contains(&key.0) {
+                if keys.contains(&key.0) && chosen == 0 {
                     if keys.contains(&Keycode::LShift) {
                         name += &key.2;
                     } else {
@@ -814,28 +822,36 @@ pub fn finish(time: f64, level_name: &str) -> bool {
                 }
             }
 
-            if keys.contains(&Keycode::Backspace) {
+            if keys.contains(&Keycode::Backspace) && chosen == 0 {
                 name.pop();
                 break;
             }
 
-            if keys.contains(&Keycode::Down) {
-                try_again = !try_again;
+            if keys.contains(&Keycode::Down) && chosen != 2 {
+                chosen += 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Up) {
-                try_again = !try_again;
+            if keys.contains(&Keycode::Up) && chosen != 0 {
+                chosen -= 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Enter) {
+            if keys.contains(&Keycode::Enter) && chosen != 0 {
                 if !name.is_empty() {
                     leader_vec.push(json!({"name": name, "time": time}));
                     fs::write("./leaderboards.json", leader_boards.to_string())
                         .expect("couldn't write json");
                 }
-                return try_again;
+                return chosen;
+            }
+            if keys.contains(&Keycode::Enter) && chosen == 0 {
+                chosen += 1;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                break;
+            }
+            if keys.contains(&Keycode::E) && chosen != 0 {
+                exit()
             }
         }
     }
