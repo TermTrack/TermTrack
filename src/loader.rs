@@ -482,7 +482,7 @@ pub fn load(path: &PathBuf) -> LevelMap {
                         ))
                     }
 
-                    c => panic!("bad map, {c}",),
+                    c => panic!("invalid character, {c}",),
                 }
 
                 // Translating grid to position
@@ -536,7 +536,7 @@ fn add_spike(mut grid: Mesh, colliders: &mut Vec<BoxCollider>) -> Mesh {
     colliders.push(BoxCollider::new(
         SPIKE_COLLIDER[0],
         SPIKE_COLLIDER[1],
-        Some("death"),
+        Some("spike"),
     ));
     return grid;
 }

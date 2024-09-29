@@ -60,8 +60,18 @@ fn main() {
                     }
                 }
                 Err(e) => match e {
-                    "death" => {
-                        if screens::game_over("You died!") {
+                    "void" => {
+                        if screens::game_over("You fell into the void!") {
+                            continue;
+                        }
+                    }
+                    "angry_pixel" => {
+                        if screens::game_over("Angry pixel killed you!") {
+                            continue;
+                        }
+                    }
+                    "spike" => {
+                        if screens::game_over("You died of spike!") {
                             continue;
                         }
                     }

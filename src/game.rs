@@ -45,7 +45,7 @@ impl Default for Enemy {
                 min_x: -GW * 0.1,
                 min_y: -GW * 0.1,
                 min_z: -GW * 0.1,
-                tag: Some("death"),
+                tag: Some("angry_pixel"),
             },
             mesh: Mesh::new(Vec::from([
                 //left
@@ -211,7 +211,7 @@ impl Game {
         let (_stream, level_audio_handle) = OutputStream::try_default().unwrap();
         audio::audio_loop(&level_audio_handle, "./sounds/background.mp3");
         let walk = audio::create_infinite_sink(&level_audio_handle, "./sounds/walk.mp3");
-        walk.set_volume(10.);
+        walk.set_volume(30.);
         walk.pause();
 
         loop {
@@ -351,7 +351,8 @@ impl Game {
             ) {
                 return match tag {
                     "goal" => Ok(level_timer.elapsed().as_secs_f64()),
-                    "death" => Err("death"),
+                    "angry_pixel" => Err("angry_pixel"),
+                    "spike" => Err("spike"),
                     t => panic!("unkown collider-tag: {t}"),
                 };
             };
@@ -373,7 +374,7 @@ impl Game {
             }
 
             if self.camera.pos.y > GW * (floors + 10) as f64 {
-                return Err("death");
+                return Err("void");
             }
 
             // render vertices
