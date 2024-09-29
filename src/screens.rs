@@ -628,7 +628,7 @@ pub fn game_over(arg: &str) -> bool {
     }
 }
 
-pub fn finish(time: f64, level_name: &str) -> bool {
+pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
     // get device state for input
     let device_state = DeviceState::new();
 
@@ -640,17 +640,17 @@ pub fn finish(time: f64, level_name: &str) -> bool {
     //for audio
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
 
+    //name + crc32(map) == id
+    let id = level_name.to_string() + &crc32fast::hash(level_map.as_bytes()).to_string();
+
     // get the leaderboard
-    let leader_boards = fs::read_to_string("./leaderboards.json").unwrap_or(String::from("{}"));
-    let mut leader_boards: Value = serde_json::from_str(&leader_boards).unwrap_or(json!({}));
-    let leader_board = match leader_boards.get_mut(&level_name) {
-        Some(x) => x,
-        None => {
-            leader_boards[&level_name] = json!([]);
-            leader_boards.get_mut(&level_name).unwrap()
-        }
+    let leader_board = match reqwest::blocking::get(&format!(
+        "http://danielsson.pythonanywhere.com/get_result/{id}"
+    )) {
+        Ok(resp) => resp.text().unwrap(),
+        Err(resp) => panic!("Err: {}", resp),
     };
-    println!("{:?}", leader_board);
+    let mut leader_board: Value = serde_json::from_str(&leader_board).unwrap_or(json!([]));
     let leader_vec = leader_board.as_array_mut().expect("leaderboard error");
     leader_vec.sort_by_key(|val| {
         (val.get("time")
@@ -798,6 +798,13 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             (box_width - 2) as usize,
             esc = 27 as char
         );
+        println!(
+            "{esc}[{};{}H{}",
+            start_y + box_height + 2,
+            start_x,
+            id,
+            esc = 27 as char
+        );
 
         thread::sleep_ms(200);
 
@@ -833,9 +840,9 @@ pub fn finish(time: f64, level_name: &str) -> bool {
             }
             if keys.contains(&Keycode::Enter) {
                 if !name.is_empty() {
-                    leader_vec.push(json!({"name": name, "time": time}));
-                    fs::write("./leaderboards.json", leader_boards.to_string())
-                        .expect("couldn't write json");
+                    let _ = reqwest::blocking::get(&format!(
+                        "http://danielsson.pythonanywhere.com/log_result/{id}/{name}/{time}"
+                    ));
                 }
                 return try_again;
             }

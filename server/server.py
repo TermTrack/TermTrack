@@ -1,24 +1,36 @@
+# A very simple Flask Hello World app for you to get started with...
+
 from flask import Flask
+import sqlite3
 import json
 
 app = Flask(__name__)
 
 
-@app.route("/result/<level_id>/<name>/<time>")
-def result(level_id, name, time):
-    with open("toplist.json") as f:
-        topplistor = json.loads(f.read())
-        try:
-            topplistor[level_id]
-        except:
-            topplistor[level_id] = []
-    topplistor[level_id].append({"name": name, "time": time})
-    with open("toplist.json", "w") as f:
-        f.write(json.dumps(topplistor))
-    x = sorted(topplistor[level_id], key=lambda x: float(x["time"]))[0:10]
-    print(x)
-    return json.dumps(x)
+def get_cursor():
+    con = sqlite3.connect("./scores.db")
+    cur = con.cursor()
+    return cur, con
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=7000)
+@app.route("/log_result/<id>/<name>/<time>")
+def log_result(id, name, time):
+    cur, con = get_cursor()
+    cur.execute("insert into scores values (?,?,?)", (id, name, time))
+    con.commit()
+    return "success"
+
+
+@app.route("/get_result/<id>")
+def get(id):
+    cur, con = get_cursor()
+    l = []
+    for row in cur.execute(
+        "select name, time from scores where id = ? order by time", (id,)
+    ):
+        l.append({"name": str(row[0]), "time": float(row[1])})
+    res = json.dumps(l)
+    return res
+
+
+app.run(host="0.0.0.0", port=8000)
