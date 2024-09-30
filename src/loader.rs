@@ -1,7 +1,7 @@
 use crate::game::Enemy;
 use crate::mat::*;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 pub const GW: f64 = 10.;
 pub const GH: f64 = 15.;
@@ -402,8 +402,20 @@ const SPIKE: [(f64, f64, f64); 4 * 4] = [
     (100., 100., 100.),
 ];
 
-fn separate_map(map: &str) -> Vec<&str> {
-    map.split("sep\n").collect()
+fn separate_map(map: &str) -> Vec<String> {
+    let mut cur = String::new();
+    let mut res = vec![];
+    for line in map.lines() {
+        if line.trim() != "sep" {
+            cur += line;
+            cur += "\n";
+        } else {
+            res.push(cur.clone());
+            cur = String::new();
+        }
+    }
+    res.push(cur);
+    res
 }
 
 pub fn load(path: &PathBuf) -> LevelMap {
@@ -412,7 +424,8 @@ pub fn load(path: &PathBuf) -> LevelMap {
     let mut colliders: Vec<BoxCollider> = vec![];
     let map_string = fs::read_to_string(path).expect("couldn't read level");
     let level_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-    let maps = separate_map(&map_string)
+    let sep_map = separate_map(&map_string);
+    let maps = sep_map
         .iter()
         .map(|x| x.split("\n").map(|y| y.trim_end()).collect::<Vec<_>>())
         .collect::<Vec<_>>();
@@ -428,8 +441,8 @@ pub fn load(path: &PathBuf) -> LevelMap {
                 let mut colliders_grid: Vec<BoxCollider> = vec![];
                 match ch {
                     'v' => {
-                        grid = add_spike(grid, &mut colliders_grid);
                         grid = add_floor(grid, level, x, row, z, rows, &mut colliders_grid);
+                        grid = add_spike(grid, &mut colliders_grid);
                     }
                     'X' => {
                         grid = add_wall(level, &maps, z, x, grid, rows, row, &mut colliders_grid);

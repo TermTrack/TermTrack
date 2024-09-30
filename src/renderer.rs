@@ -197,28 +197,40 @@ impl Screen {
         print!("\x1b[48;1;0m{:<1$}", extra, self.w);
     }
 
-    pub fn render_map(&self, map: &str, position: Vec3, grid_width: f64) {
+    pub fn render_map(&self, map: &str, position: Vec3, grid_width: f64, grid_height: f64) {
         let map = map_as_vec_of_floors(map);
 
         let mut map: Vec<&str> = map
-            .get((-position.y.div_euclid(grid_width)) as usize)
+            .get((-position.y.div_euclid(grid_height)) as usize)
             .unwrap_or(map.last().unwrap_or(&vec![]))
             .clone();
 
         let height = map.len();
         let mut width = 0;
         let [pos_x, pos_y] = [
-            (position.x / grid_width) as usize,
-            (position.z / grid_width) as usize,
+            (position.x.div_euclid(grid_width)) as usize,
+            (position.z.div_euclid(grid_width)) as usize,
         ];
 
         let mut player_string = String::new();
 
         for (i, row) in map.iter_mut().enumerate() {
             width = width.max(row.len());
+        }
+
+        let mut rows = vec![];
+
+        for (i, row) in map.iter_mut().enumerate() {
+            rows.push(format!("{: <1$}", row, width));
+        }
+        for (i, row) in map.iter_mut().enumerate() {
+            *row = &rows[i];
+        }
+
+        for (i, row) in map.iter_mut().enumerate() {
             if i == pos_y {
-                let (p1, p2) = row.split_at(pos_x);
-                let (p2, p3) = p2.split_at(1);
+                let (p1, p2) = row.split_at_checked(pos_x).unwrap_or((row, " "));
+                let (p2, p3) = p2.split_at_checked(1).unwrap_or((p2, " "));
                 player_string = format!("{p1}\x1b[48;2;50;255;50m{p2}\x1b[48;2;000;000;000m{p3}");
                 *row = &player_string;
                 break;
@@ -242,13 +254,13 @@ impl Screen {
         for (i, row) in map.iter().enumerate() {
             //Move cursor
             print!("\x1b[{};{}H", y_start + i, x_start);
-            let mut extra = 4;
+            let mut extra = 3;
 
             if i == pos_y {
                 extra += 36;
             }
             //println center aligned string
-            println!("|{:^1$}|\r", row, width + extra);
+            println!("| {:<1$}|\r", row, width + extra);
         }
         let y_start = y_start + height;
 
@@ -264,9 +276,17 @@ impl Screen {
 }
 
 pub fn map_as_vec_of_floors(map: &str) -> Vec<Vec<&str>> {
-    let map: Vec<Vec<&str>> = map
-        .split("sep\n")
-        .map(|x| x.split("\n").collect())
-        .collect();
-    map
+    let spl = map.lines().collect::<Vec<&str>>();
+    let mut res = vec![];
+    let mut cur = vec![];
+    for line in spl {
+        if line == "sep" {
+            res.push(cur.clone());
+            cur = vec![];
+        } else {
+            cur.push(line);
+        }
+    }
+    res.push(cur.clone());
+    res
 }

@@ -167,11 +167,12 @@ pub struct Game {
     pub camera: Camera,
 }
 
-const SPEED: f64 = 28.;
-const JUMP_SPEED: f64 = 47.5;
+const SPEED: f64 = 30.;
+const MAX_FALL_SPEED: f64 = 130.;
+const JUMP_SPEED: f64 = 53.;
 const ROTATION_SPEED: f64 = 2.5;
-const GRAVITY: f64 = 105.;
-const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 4.5, -1.), (1., -1., 1.));
+const GRAVITY: f64 = 125.;
+const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-0.1, 4.5, -1.), (1., -1., 1.));
 
 impl Game {
     pub fn run(
@@ -263,7 +264,7 @@ impl Game {
                 let timer_1 = level_timer.elapsed();
                 time = Instant::now();
                 self.renderer
-                    .render_map(&map_string, self.camera.pos, loader::GW);
+                    .render_map(&map_string, self.camera.pos, loader::GW, loader::GH);
                 loop {
                     if device_state.get_keys().contains(&Keycode::M) {
                         if time.elapsed() < Duration::from_millis(150) {
@@ -331,6 +332,7 @@ impl Game {
             // add gravity
             self.camera.vel = v;
             self.camera.vel.y += GRAVITY * dt;
+            self.camera.vel.y = self.camera.vel.y.min(MAX_FALL_SPEED);
 
             //update enemies
 
