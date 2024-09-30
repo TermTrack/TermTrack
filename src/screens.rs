@@ -722,20 +722,23 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
             esc = 27 as char
         );
         for (i, result) in leader_vec.iter().take(take).enumerate() {
+            let mut name = result.get("name").unwrap().as_str().unwrap().to_string();
+            let time = result.get("time").unwrap().as_f64().unwrap();
+            let max_width = box_width - 10 - format!("{:.2}", time).len() as u16 - 1;
+            if name.len() > max_width as usize {
+                name = name[0..(max_width as usize - 3)].to_string() + "...";
+            }
+
             println!(
                 "{esc}[{};{}H| {:<3$} |",
                 start_y + 6 + i as u16,
                 start_x,
-                format!(
-                    "{}. {} - {:.2}s",
-                    i + 1,
-                    result.get("name").unwrap().as_str().unwrap(),
-                    result.get("time").unwrap().as_f64().unwrap(),
-                ),
+                format!("{}. {} - {:.2}s", i + 1, name, time,),
                 (box_width - 4) as usize,
                 esc = 27 as char
             );
         }
+
         println!(
             "{esc}[{};{}H|{:^3$}|",
             start_y + 6 + take as u16,
@@ -840,7 +843,9 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
                 break;
             }
             if keys.contains(&Keycode::E) && chosen != 0 {
-                exit();
+                if exit() {
+                    exit_app();
+                }
                 break;
             }
         }

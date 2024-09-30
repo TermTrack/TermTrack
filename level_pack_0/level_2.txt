@@ -1,0 +1,32 @@
+XXXXXXXXXXXXXXXXXXX
+XSx.X             X
+XxXxX             X
+X.x .X            X
+XXXX.X   .x       X
+XxxxxX  .         X
+XXXXXX  .x        X
+X                 X
+X                 X
+XXXXXXXXXXXXXXXXXXX
+sep
+XXXXXXXXXXXXXXXXXXX
+X.x.X... .. .. .. X
+X.....           .X
+X....X            X
+XXXXXX     .......X
+X    XXXXXXXXXXXXXX
+X.XXXX    . xx.   X
+X....XXXXXXXXXXx  X
+X..............   X
+XXXXXXXXXXXXXXXXXXX
+sep
+XXXXXXXXXXXXXXXXXXX
+XE                X
+X                 X
+X                 X
+X                 X
+XXXXXXXXXXXXXXXXXXX
+X                 X
+X    XXXXXXXXX    X
+X                 X
+XXXXXXXXXXXXXXXXXXX
