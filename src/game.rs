@@ -167,10 +167,10 @@ pub struct Game {
     pub camera: Camera,
 }
 
-const SPEED: f64 = 27.5;
-const JUMP_SPEED: f64 = 42.;
+const SPEED: f64 = 27.;
+const JUMP_SPEED: f64 = 47.5;
 const ROTATION_SPEED: f64 = 2.5;
-const GRAVITY: f64 = 85.;
+const GRAVITY: f64 = 105.;
 const PLAYER_COLLIDER: ((f64, f64, f64), (f64, f64, f64)) = ((-1., 4.5, -1.), (1., -1., 1.));
 
 impl Game {

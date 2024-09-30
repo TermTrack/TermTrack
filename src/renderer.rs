@@ -7,8 +7,8 @@ pub const RENDER_DIST: f64 = 30.;
 
 pub fn get_terminal_size() -> (usize, usize) {
     let (w, h) = crossterm::terminal::size().unwrap();
-    let w = (w as usize).min(350);
-    let h = (h as usize).min(150);
+    let w = (w as usize).min(220);
+    let h = (h as usize).min(65);
     (w, h)
 }
 
