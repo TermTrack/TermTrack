@@ -93,6 +93,8 @@ pub fn menu_print() {
         " ",
         "How to win:",
         "Find the end.",
+        " ",
+        "Press |L| to show leaderboard for chosen level",
     ];
     // print background image
     print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
@@ -264,6 +266,8 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         " ",
         "How to win:",
         "Find the end.",
+        " ",
+        "Press |L| to show leaderboard for chosen level",
     ];
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
     audio::audio_loop(&audio_handle, "./sounds/menu.mp3");
@@ -473,6 +477,23 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
             esc = 27 as char
         );
 
+        //chosen level id
+        let level_map = fs::read(&levels[chosen_level as usize]).unwrap();
+
+        let level_id = level_names[chosen_level as usize]
+            .to_str()
+            .unwrap()
+            .to_string()
+            + &crc32fast::hash(&level_map).to_string();
+
+        // println!(
+        //     "{esc}[{};{}Hid: {}",
+        //     y + box_height + 2,
+        //     x,
+        //     level_id,
+        //     esc = 27 as char
+        // );
+
         thread::sleep_ms(200);
 
         //match input
@@ -495,12 +516,157 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
 
                 return chosen_level as usize;
             }
+            if keys.contains(&Keycode::L) {
+                if !(leaderboard(
+                    level_id,
+                    level_names[chosen_level as usize]
+                        .to_str()
+                        .unwrap()
+                        .to_string(),
+                )) {
+                    exit_app();
+                };
+                menu_print();
+                break;
+            }
             if keys.contains(&Keycode::E) {
                 if screens::exit() {
                     exit_app();
                 };
                 menu_print();
                 break;
+            }
+        }
+    }
+}
+
+pub fn leaderboard(level_id: String, level_name: String) -> bool {
+    let device_state = DeviceState::new();
+    let (screen_width, screen_height) = renderer::get_terminal_size();
+    let screen_width = screen_width as u16;
+    let screen_height = screen_height as u16;
+    let box_width = 50;
+    let mut y = 0;
+    let x = screen_width / 2 - box_width / 2;
+    let margin = 3;
+    let mut scroll: usize = 0;
+
+    // get leaderboard
+    let leader_board = match reqwest::blocking::get(&format!(
+        "http://danielsson.pythonanywhere.com/get_result/{level_id}"
+    )) {
+        Ok(resp) => resp.text().unwrap(),
+        Err(resp) => panic!("Err: {}", resp),
+    };
+    let mut leader_board: Value = serde_json::from_str(&leader_board).unwrap_or(json!([]));
+    let leader_vec = leader_board.as_array_mut().expect("leaderboard error");
+    let take = leader_vec.len().min(screen_height as usize - 10);
+
+    // leader_vec.sort_by_key(|val| {
+    //     (val.get("time")
+    //         .expect("leaderboard format wrong")
+    //         .as_f64()
+    //         .expect("leaderboard format wrong")
+    //         * 1000.) as usize
+    // });
+
+    // print background image
+    print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
+    for _row in 0..=screen_height {
+        println!("{}\r", " ".repeat(screen_width as usize),)
+    }
+
+    let level_name = level_name.to_uppercase();
+
+    y += 3;
+    println!(
+        "{esc}[{};{}H{:^3$}",
+        y,
+        x,
+        format!("* LEADERBOARD FOR: {level_name} *"),
+        (box_width) as usize,
+        esc = 27 as char
+    );
+    y += 1;
+    println!(
+        "{esc}[{};{}H{:-^3$}",
+        y,
+        x,
+        "",
+        (box_width) as usize,
+        esc = 27 as char
+    );
+    y += 1;
+
+    loop {
+        // print leaderboard
+
+        for (i, result) in leader_vec.iter().skip(scroll).take(take).enumerate() {
+            let mut name = result.get("name").unwrap().as_str().unwrap().to_string();
+            let time = result.get("time").unwrap().as_f64().unwrap();
+            let max_width = box_width
+                - 2 * margin
+                - format!("{:.2}", time).len() as u16
+                - 7
+                - i.to_string().len() as u16;
+            if name.len() > max_width as usize {
+                name = name[0..(max_width as usize - 3)].to_string() + "...";
+            }
+
+            println!(
+                "{esc}[{};{}H{:<3$}",
+                y + i as u16,
+                x + margin,
+                format!("{}. {} - {:.2}s", i + 1 + scroll, name, time,),
+                (box_width - 4) as usize,
+                esc = 27 as char
+            );
+        }
+
+        // print lines
+
+        println!(
+            "{esc}[{};{}H{:-^3$}",
+            y + take as u16,
+            x,
+            "",
+            (box_width) as usize,
+            esc = 27 as char
+        );
+        println!(
+            "{esc}[{};{}H{}",
+            y + take as u16 + 1,
+            x,
+            "Use |\u{1F845} | and |\u{1F847} | to scroll",
+            esc = 27 as char
+        );
+        println!(
+            "{esc}[{};{}H{}",
+            y + take as u16 + 2,
+            x,
+            "Press |E| to go back",
+            esc = 27 as char
+        );
+
+        thread::sleep_ms(200);
+
+        //match input
+        loop {
+            let keys = device_state.get_keys();
+
+            if keys.contains(&Keycode::Up) {
+                scroll = scroll.saturating_sub(1);
+                break;
+            }
+            if keys.contains(&Keycode::Down) {
+                if scroll < leader_vec.len() - take {
+                    scroll += 1;
+                }
+
+                break;
+            }
+            if keys.contains(&Keycode::E) {
+                return true;
             }
         }
     }
@@ -640,13 +806,13 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
     };
     let mut leader_board: Value = serde_json::from_str(&leader_board).unwrap_or(json!([]));
     let leader_vec = leader_board.as_array_mut().expect("leaderboard error");
-    leader_vec.sort_by_key(|val| {
-        (val.get("time")
-            .expect("leaderboard format wrong")
-            .as_f64()
-            .expect("leaderboard format wrong")
-            * 1000.) as usize
-    });
+    // leader_vec.sort_by_key(|val| {
+    //     (val.get("time")
+    //         .expect("leaderboard format wrong")
+    //         .as_f64()
+    //         .expect("leaderboard format wrong")
+    //         * 1000.) as usize
+    // });
     let mut name = String::new();
 
     let take = leader_vec.len().min(5);
