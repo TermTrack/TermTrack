@@ -230,14 +230,6 @@ impl Game {
 
             let dt = dt.min(0.2);
 
-            // render vertices
-            self.renderer.render_pruned_mt(
-                &self.camera,
-                &mesh,
-                &format!("{}{}{}", fps_text, timer_text, floor_text),
-                true,
-            );
-
             // handle input
             let mouse = device_state.get_mouse();
             let keys = device_state.get_keys();
