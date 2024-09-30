@@ -1,10 +1,9 @@
-use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
-use rayon::iter::IntoParallelIterator;
+use device_query::{DeviceQuery, DeviceState, Keycode};
 use rodio::OutputStreamHandle;
 
-use rodio::{source::Source, Decoder, OutputStream};
+use rodio::{source::Source, OutputStream};
 
-use crate::loader::{self, load};
+use crate::loader::{self};
 use crate::renderer::{self, *};
 use crate::GW;
 use crate::{audio, LevelMap};
@@ -45,7 +44,7 @@ impl Default for Enemy {
                 min_x: -GW * 0.1,
                 min_y: -GW * 0.1,
                 min_z: -GW * 0.1,
-                tag: Some("death"),
+                tag: Some("angry_pixel"),
             },
             mesh: Mesh::new(Vec::from([
                 //left
@@ -128,12 +127,12 @@ impl Enemy {
     pub fn get_collider(&self) -> BoxCollider {
         let mut col = self.collider.clone();
         col.translate(self.pos);
-        return col;
+        col
     }
 
     pub fn translate(mut self, to: Vec3) -> Self {
         self.pos = self.pos + to;
-        return self;
+        self
     }
 
     pub fn get_mesh(&self) -> Mesh {
@@ -158,10 +157,11 @@ impl Enemy {
                     y: self.pos.y,
                 };
         }
-        return mesh;
+        mesh
     }
 }
 
+#[derive(Clone)]
 pub struct Game {
     pub renderer: Screen,
     pub camera: Camera,
@@ -211,7 +211,7 @@ impl Game {
         let (_stream, level_audio_handle) = OutputStream::try_default().unwrap();
         audio::audio_loop(&level_audio_handle, "./sounds/background.mp3");
         let walk = audio::create_infinite_sink(&level_audio_handle, "./sounds/walk.mp3");
-        walk.set_volume(10.);
+        walk.set_volume(30.);
         walk.pause();
 
         loop {
@@ -219,11 +219,9 @@ impl Game {
             let dt = time.elapsed().as_secs_f64();
             time = Instant::now();
 
-            // get list off all vertices
-
-            let fps_text = &format!("fps: {:.2?} ", 1. / (dt));
-            let timer_text = &format!("time: {:.1?} ", level_timer.elapsed());
-            let floor_text = &format!(
+            let fps_text = format!("fps: {:.2?} ", 1. / (dt));
+            let timer_text = format!("time: {:.1?} ", level_timer.elapsed());
+            let floor_text = format!(
                 "floor: {}/{}",
                 (-self.camera.pos.y.div_euclid(GH)).clamp(0., floors as f64) as usize,
                 floors
@@ -231,13 +229,20 @@ impl Game {
 
             let dt = dt.min(0.2);
 
-            // render vertices
-            self.renderer.render_pruned_mt(
-                &self.camera,
-                &mesh,
-                &format!("{}{}{}", fps_text, timer_text, floor_text),
-                true,
-            );
+            //update enemies
+            let mut render_mesh = mesh.clone();
+            let mut cols = colliders.clone();
+            for enemy in enemies.iter_mut() {
+                enemy.update(dt, self.camera.pos, &colliders);
+                cols.push(enemy.get_collider());
+                render_mesh = render_mesh + enemy.get_mesh();
+            }
+
+            // render vertices in parallel thread.
+            let cam = self.camera.clone();
+            let renderer = self.renderer.clone();
+            let render_thread =
+                thread::spawn(move || renderer.render_pruned_mt(&cam, &render_mesh));
 
             // handle input
             let mouse = device_state.get_mouse();
@@ -277,15 +282,11 @@ impl Game {
             if keys.contains(&Keycode::Right) {
                 self.camera.rotation.x += ROTATION_SPEED * dt;
             }
-            if keys.contains(&Keycode::Up) {
-                if self.camera.rotation.y < 1.5 {
-                    self.camera.rotation.y += ROTATION_SPEED * dt;
-                }
+            if keys.contains(&Keycode::Up) && self.camera.rotation.y < 1.5 {
+                self.camera.rotation.y += ROTATION_SPEED * dt;
             }
-            if keys.contains(&Keycode::Down) {
-                if self.camera.rotation.y > -1.5 {
-                    self.camera.rotation.y -= ROTATION_SPEED * dt;
-                }
+            if keys.contains(&Keycode::Down) && self.camera.rotation.y > -1.5 {
+                self.camera.rotation.y -= ROTATION_SPEED * dt;
             }
 
             let mut v = Vec3 {
@@ -332,13 +333,6 @@ impl Game {
             self.camera.vel.y += GRAVITY * dt;
 
             //update enemies
-            let mut render_mesh = mesh.clone();
-            let mut cols = colliders.clone();
-            for enemy in enemies.iter_mut() {
-                enemy.update(dt, self.camera.pos, &colliders);
-                cols.push(enemy.get_collider());
-                render_mesh = render_mesh + enemy.get_mesh();
-            }
 
             // collision
             let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1, None);
@@ -353,7 +347,8 @@ impl Game {
             ) {
                 return match tag {
                     "goal" => Ok(level_timer.elapsed().as_secs_f64()),
-                    "death" => Err("death"),
+                    "angry_pixel" => Err("angry_pixel"),
+                    "spike" => Err("spike"),
                     t => panic!("unkown collider-tag: {t}"),
                 };
             };
@@ -361,13 +356,21 @@ impl Game {
                 if walk.is_paused() {
                     walk.play();
                 }
-            } else {
-                if !walk.is_paused() {
-                    walk.pause();
-                }
+            } else if !walk.is_paused() {
+                walk.pause();
             }
 
             self.camera.update_pos(dt);
+
+            //print to when rendering is finished screen
+            if let Ok(buffer) = render_thread.join() {
+                self.renderer.flush(
+                    &buffer,
+                    false,
+                    &format!("{}{}{}", &fps_text, &timer_text, &floor_text),
+                );
+            }
+
             // jump
             if grounded && keys.contains(&Keycode::Space) {
                 self.camera.vel.y = -JUMP_SPEED;
@@ -375,16 +378,8 @@ impl Game {
             }
 
             if self.camera.pos.y > GW * (floors + 10) as f64 {
-                return Err("death");
+                return Err("void");
             }
-
-            // render vertices
-            self.renderer.render_pruned_mt(
-                &self.camera,
-                &render_mesh,
-                &format!("{}{}{}", fps_text, timer_text, floor_text),
-                true,
-            );
         }
     }
 }

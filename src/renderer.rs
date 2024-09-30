@@ -1,5 +1,6 @@
+use std::sync::{Arc, Mutex};
+
 use crate::{camera::Camera, mat::*};
-use crossterm;
 use rayon::prelude::*;
 
 pub const RENDER_DIST: f64 = 30.;
@@ -11,10 +12,10 @@ pub fn get_terminal_size() -> (usize, usize) {
     (w, h)
 }
 
+#[derive(Clone)]
 pub struct Screen {
     pub w: usize,
     pub h: usize,
-    pub buffer: Vec<Vec<Vec3>>,
 }
 
 impl Screen {
@@ -34,34 +35,30 @@ impl Screen {
                     y: 0.,
                     z: 0.
                 };
-                w.into()
+                w
             ];
-            h.into()
+            h
         ];
 
-        Screen {
-            w: w.into(),
-            h: h.into(),
-            buffer,
-        }
+        Screen { w, h }
     }
 
-    fn flush(&mut self, ascii: bool) {
+    pub fn flush(&mut self, buffer: &[Vec<Vec3>], ascii: bool, extra: &str) {
         // Create new string buffer
-        let mut buffer = String::new();
+        let mut pix_buffer = String::new();
         let mut color = Vec3 {
             x: 0.,
             y: 0.,
             z: 0.,
         };
         // Iterate through buffer
-        for y in 0..self.buffer.len() {
-            for x in 0..self.buffer[y].len() {
+        for y in 0..buffer.len() {
+            for x in 0..buffer[y].len() {
                 // Add ' ' (char if ascii is true) withrightcolor to string buffer
                 let mut c = ' ';
                 // set background
                 let mut command = "48";
-                let col = self.buffer[y][x];
+                let col = buffer[y][x];
                 if ascii {
                     // set foreground
                     command = "38";
@@ -75,86 +72,33 @@ impl Screen {
                     c = chars[s];
                 }
                 if col != color {
-                    buffer += &format!(
+                    pix_buffer += &format!(
                         "\x1b[{command};2;{};{};{}m{c}",
                         col.x as u8, col.y as u8, col.z as u8
                     );
                     color = col;
                 } else {
-                    buffer += " ";
+                    pix_buffer += " ";
                 }
             }
-            buffer += "\x1b[48;2;0;0;0m\r\n";
+            pix_buffer += "\x1b[48;2;0;0;0m\r\n";
         }
+        pix_buffer += &format!("{:<1$}", extra, self.w);
 
         //Move cursor home and print string buffer
-        print!("\x1b[H{}", buffer);
+        print!("\x1b[H{}", pix_buffer);
 
         let (w, h) = get_terminal_size();
-        if self.w != w as usize || self.h != h as usize - 1 {
+        if self.w != w || self.h != h - 1 {
             print!("\x1b[2J\r");
-            self.w = w as usize;
-            self.h = h as usize - 1;
+            self.w = w;
+            self.h = h - 1;
         }
-
-        // clear buffer
-        self.buffer = vec![
-            vec![
-                Vec3 {
-                    x: 0.,
-                    y: 0.,
-                    z: 0.
-                };
-                self.w
-            ];
-            self.h
-        ]
     }
 
     // Not used, left for benchmark against new version
-    pub fn render_geometric(&mut self, camera: &Camera, mesh: &Mesh, extra: &str, print: bool) {
-        let tris = mesh.tris();
-        let buffer = &mut self.buffer;
 
-        buffer.par_iter_mut().enumerate().for_each(|(y, row)| {
-            for (x, pixel) in row.iter_mut().enumerate() {
-                let mut min_dist = f64::MAX;
-                let mut color = Vec3 {
-                    x: 0.,
-                    y: 0.,
-                    z: 0.,
-                };
-                let min_dim = self.w.min(self.h * 2) as f64 / 2.;
-                let pixel_coords = Vec3 {
-                    x: (x as f64 - self.w as f64 / 2.) / min_dim,
-                    y: (y as f64 * 2. - self.h as f64 / 2.) / min_dim,
-                    z: camera.focus_length,
-                };
-                let pixel_coords = pixel_coords.rotate(camera.rotation);
-                let ray_dir = pixel_coords;
-                let ray_o = camera.pos + pixel_coords;
-                for tri in &tris {
-                    let (hit, distance) = tri.hit_geo(ray_o, ray_dir);
-                    if hit {
-                        if distance < min_dist {
-                            min_dist = distance;
-
-                            color = tri.color;
-                        }
-                    }
-                }
-                color = color * (1. - min_dist / RENDER_DIST);
-                *pixel = color;
-            }
-        });
-        if print {
-            // true for ascii art
-            self.flush(false);
-            self.print_info(camera, extra)
-        }
-    }
-
-    pub fn render_pruned_mt(&mut self, camera: &Camera, mesh: &Mesh, extra: &str, print: bool) {
+    pub fn render_pruned_mt(&self, camera: &Camera, mesh: &Mesh) -> Vec<Vec<Vec3>> {
         let mut pruned_tris = Vec::with_capacity(mesh.tris().len());
         let forward = Vec3 {
             x: 0.,
@@ -191,13 +135,21 @@ impl Screen {
                 pruned_tris.push(tri);
             }
         }
-        let pruned_mesh = Mesh { tris: pruned_tris };
-        self.render_mt(&camera, &pruned_mesh, extra, print);
+        self.render_mt(camera, &pruned_tris)
     }
 
-    pub fn render_mt(&mut self, camera: &Camera, mesh: &Mesh, extra: &str, print: bool) {
-        let tris = mesh.tris();
-        let buffer = &mut self.buffer;
+    pub fn render_mt(&self, camera: &Camera, tris: &[Tri]) -> Vec<Vec<Vec3>> {
+        let mut buffer = vec![
+            vec![
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 0.
+                };
+                self.w
+            ];
+            self.h
+        ];
 
         buffer.par_iter_mut().enumerate().for_each(|(y, row)| {
             row.par_iter_mut().enumerate().for_each(|(x, pixel)| {
@@ -217,17 +169,14 @@ impl Screen {
                 let ray_dir = pixel_coords;
                 let ray_o = camera.pos;
                 let mut closet_idx = None;
-                for (idx, tri) in tris.iter().enumerate() {
+                tris.iter().enumerate().for_each(|(idx, tri)| {
                     let (hit, distance) = tri.hit_mt(ray_o, ray_dir);
-                    let distance = distance;
-                    if hit {
-                        if distance < min_dist {
-                            min_dist = distance;
+                    if hit && distance < min_dist {
+                        min_dist = distance;
 
-                            closet_idx = Some(idx);
-                        }
+                        closet_idx = Some(idx);
                     }
-                }
+                });
                 if let Some(idx) = closet_idx {
                     let tri = tris[idx];
                     color = tri.color;
@@ -239,14 +188,9 @@ impl Screen {
                 }
                 color = color * (1. - min_dist / RENDER_DIST);
                 *pixel = color;
-            })
+            });
         });
-        if print {
-            // true for ascii art
-            // self.amplify_edges();
-            self.flush(false);
-            self.print_info(camera, &format!("{extra}"))
-        }
+        buffer
     }
 
     fn print_info(&self, camera: &Camera, extra: &str) {
@@ -257,7 +201,7 @@ impl Screen {
         let map = map_as_vec_of_floors(map);
 
         let mut map: Vec<&str> = map
-            .get((-position.y.div_euclid(grid_width as f64)) as usize)
+            .get((-position.y.div_euclid(grid_width)) as usize)
             .unwrap_or(map.last().unwrap_or(&vec![]))
             .clone();
 
@@ -320,268 +264,9 @@ impl Screen {
 }
 
 pub fn map_as_vec_of_floors(map: &str) -> Vec<Vec<&str>> {
-    let mut map: Vec<Vec<&str>> = map
+    let map: Vec<Vec<&str>> = map
         .split("sep\n")
         .map(|x| x.split("\n").collect())
         .collect();
     map
-}
-
-#[cfg(test)]
-mod tests {
-    use std::time::Instant;
-
-    use super::*;
-
-    #[test]
-    fn benchmark_geometric() {
-        let mut s = Screen::new();
-        let c = Camera {
-            pos: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-            rotation: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-            focus_length: 0.5,
-            vel: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-        };
-        let e = "tom";
-
-        let m = Mesh::new(vec![
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-        ]);
-
-        const T: usize = 1000;
-
-        let now = Instant::now();
-        for _ in 0..T {
-            s.render_geometric(&c, &m, e, false);
-        }
-        let _ = crossterm::terminal::disable_raw_mode().unwrap();
-        let t = now.elapsed();
-        println!(
-            "\r\n GEO Total time: {:.2?}, average: {:.2?}",
-            t,
-            t / T as u32
-        );
-    }
-
-    #[test]
-    fn benchmark_mt() {
-        let mut s = Screen::new();
-        let c = Camera {
-            pos: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-            rotation: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-            focus_length: 0.5,
-            vel: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-        };
-        let e = "tom";
-        let m = Mesh::new(vec![
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-        ]);
-
-        const T: usize = 1000;
-
-        let now = Instant::now();
-        for _ in 0..T {
-            s.render_mt(&c, &m, e, false);
-        }
-        let _ = crossterm::terminal::disable_raw_mode().unwrap();
-        let t = now.elapsed();
-        println!(
-            "\r\n MT Total time: {:.2?}, average: {:.2?}",
-            t,
-            t / T as u32
-        );
-    }
-    #[test]
-    fn benchmark_mt_gpu() {
-        let mut s = Screen::new();
-        let c = Camera {
-            pos: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-            rotation: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-            focus_length: 0.5,
-            vel: Vec3 {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            },
-        };
-        let e = "tom";
-        let m = Mesh::new(vec![
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-            (0., 0., 1.),
-            (1., 1., 1.),
-            (1., 0., 1.),
-            (200., 200., 200.),
-        ]);
-
-        const T: usize = 100;
-
-        let now = Instant::now();
-        for _ in 0..T {
-            // s.render_mt_gpu(&c, &m, e, true);
-        }
-        let _ = crossterm::terminal::disable_raw_mode().unwrap();
-        let t = now.elapsed();
-        println!(
-            "\r\n GPU Total time: {:.2?}, average: {:.2?}",
-            t,
-            t / T as u32
-        );
-    }
 }

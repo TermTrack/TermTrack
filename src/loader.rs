@@ -1,7 +1,7 @@
 use crate::game::Enemy;
 use crate::mat::*;
 use std::path::PathBuf;
-use std::{fs, io};
+use std::fs;
 
 pub const GW: f64 = 10.;
 pub const GH: f64 = 15.;
@@ -482,7 +482,7 @@ pub fn load(path: &PathBuf) -> LevelMap {
                         ))
                     }
 
-                    c => panic!("bad map, {c}",),
+                    c => panic!("invalid character, {c}",),
                 }
 
                 // Translating grid to position
@@ -525,7 +525,7 @@ pub fn load(path: &PathBuf) -> LevelMap {
         mesh,
         colliders,
         start_pos: start,
-        map_string: map_string,
+        map_string,
         level_name,
         enemies,
     }
@@ -536,9 +536,9 @@ fn add_spike(mut grid: Mesh, colliders: &mut Vec<BoxCollider>) -> Mesh {
     colliders.push(BoxCollider::new(
         SPIKE_COLLIDER[0],
         SPIKE_COLLIDER[1],
-        Some("death"),
+        Some("spike"),
     ));
-    return grid;
+    grid
 }
 
 fn add_wall(
@@ -553,7 +553,7 @@ fn add_wall(
 ) -> Mesh {
     // Adding the visible face
     if level >= maps.len() - 1
-        || maps[level + 1].get(z) == None
+        || maps[level + 1].get(z).is_none()
         || ![Some('X'), Some('.'), Some('v'), Some('S'), Some('E')]
             .contains(&maps[level + 1][z].chars().nth(x))
     {
@@ -561,7 +561,7 @@ fn add_wall(
         grid = grid + Mesh::new(Vec::from(WALL[0]));
     }
     if level != 0
-        && maps[level - 1].get(z) != None
+        && maps[level - 1].get(z).is_some()
         && maps[level - 1][z].chars().nth(x) != Some('X')
     {
         //add under-wall
@@ -585,7 +585,7 @@ fn add_wall(
     }
 
     colliders_grid.push(BoxCollider::new(WALL_COLLIDER[0], WALL_COLLIDER[1], None));
-    return grid;
+    grid
 }
 
 fn add_half_wall(
@@ -602,7 +602,7 @@ fn add_half_wall(
     // add top wall
     grid = grid + Mesh::new(Vec::from(HALF_WALL[0]));
     if level != 0
-        && maps[level - 1].get(z) != None
+        && maps[level - 1].get(z).is_some()
         && maps[level - 1][z].chars().nth(x) != Some('X')
     {
         //add under-wall
@@ -631,7 +631,7 @@ fn add_half_wall(
         HALF_WALL_COLLIDER[1],
         None,
     ));
-    return grid;
+    grid
 }
 
 fn add_floor(
@@ -640,7 +640,7 @@ fn add_floor(
     x: usize,
     row: &&str,
     z: usize,
-    rows: &Vec<&str>,
+    rows: &[&str],
     colliders_grid: &mut Vec<BoxCollider>,
 ) -> Mesh {
     // add floor
@@ -669,7 +669,7 @@ fn add_floor(
     // add collider to colliders
 
     colliders_grid.push(BoxCollider::new(FLOOR_COLLIDER[0], FLOOR_COLLIDER[1], None));
-    return grid;
+    grid
 }
 
 // #[cfg(test)]

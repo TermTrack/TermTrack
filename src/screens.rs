@@ -1,16 +1,16 @@
-use std::io::{self, stdin, BufReader, Read};
+use std::io::{stdin, Read};
 use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
+use rodio::OutputStream;
 use rodio::OutputStreamHandle;
-use rodio::{source::Source, Decoder, OutputStream};
 use serde_json::{json, Value};
 
 use crate::{audio, screens};
 
 use crate::renderer;
 
-const keys_keycode: [(Keycode, &str, &str); 37] = [
+const KEYS_KEYCODE: [(Keycode, &str, &str); 37] = [
     (Keycode::A, "a", "A"),
     (Keycode::B, "b", "B"),
     (Keycode::C, "c", "C"),
@@ -96,13 +96,8 @@ pub fn menu_print() {
     ];
     // print background image
     print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-    for row in 0..=screen_height {
-        println!(
-            "{}\r",
-            std::iter::repeat(" ")
-                .take(screen_width as usize)
-                .collect::<String>()
-        )
+    for _row in 0..=screen_height {
+        println!("{}\r", " ".repeat(screen_width as usize),)
     }
 
     let (title, gap) = match screen_width {
@@ -113,7 +108,7 @@ pub fn menu_print() {
         0..45 => ("", 0),
     };
 
-    if title == "" {
+    if title.is_empty() {
         panic!("please expand your terminal and try again.");
     };
 
@@ -275,14 +270,11 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
 
     // print background image
     print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-    for row in 0..=screen_height {
-        println!(
-            "{}\r",
-            std::iter::repeat(" ")
-                .take(screen_width as usize)
-                .collect::<String>()
-        )
+    for _row in 0..=screen_height {
+        println!("{}\r", " ".repeat(screen_width as usize),)
     }
+
+    // print title
 
     let (title, gap) = match screen_width {
         125..=u16::MAX => (TITLE_L, 2),
@@ -292,11 +284,10 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         0..45 => ("", 0),
     };
 
-    if title == "" {
+    if title.is_empty() {
         panic!("please expand your terminal and try again.");
     };
 
-    // print title
     let lines: Vec<&str> = title.split("\n").collect();
     let menu_width = lines[1].len() as u16;
     let mut y: u16 = 0;
@@ -488,19 +479,15 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
         loop {
             let keys = device_state.get_keys();
 
-            if keys.contains(&Keycode::Down) {
-                if chosen_level != level_names.len() as u16 - 1 {
-                    chosen_level += 1;
-                    audio::play_audio(&audio_handle, "./sounds/pop.mp3");
-                    break;
-                }
+            if keys.contains(&Keycode::Down) && chosen_level != level_names.len() as u16 - 1 {
+                chosen_level += 1;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                break;
             }
-            if keys.contains(&Keycode::Up) {
-                if chosen_level != 0 {
-                    chosen_level = chosen_level.checked_sub(1).unwrap_or(0);
-                    audio::play_audio(&audio_handle, "./sounds/pop.mp3");
-                    break;
-                }
+            if keys.contains(&Keycode::Up) && chosen_level != 0 {
+                chosen_level = chosen_level.saturating_sub(1);
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                break;
             }
             if keys.contains(&Keycode::Enter) {
                 // audio::play_audio(&audio_handle, "./sounds/enter.mp3");
@@ -527,7 +514,7 @@ pub fn game_over(arg: &str) -> bool {
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
 
     let box_width: u16 = 30.max(arg.len() as u16);
-    let mut box_height = 5;
+    let box_height = 5;
 
     let start_x = screen_width / 2 - box_width / 2;
     let start_y = screen_height / 2 - box_height / 2;
@@ -536,13 +523,8 @@ pub fn game_over(arg: &str) -> bool {
     loop {
         // print background image
         print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-        for row in 0..=screen_height {
-            println!(
-                "{}\r",
-                std::iter::repeat(" ")
-                    .take(screen_width as usize)
-                    .collect::<String>()
-            )
+        for _row in 0..=screen_height {
+            println!("{}\r", " ".repeat(screen_width as usize),)
         }
 
         // print menu
@@ -624,11 +606,17 @@ pub fn game_over(arg: &str) -> bool {
             if keys.contains(&Keycode::Enter) {
                 return try_again;
             }
+            if keys.contains(&Keycode::E) {
+                if exit() {
+                    exit_app();
+                }
+                break;
+            }
         }
     }
 }
 
-pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
+pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
     // get device state for input
     let device_state = DeviceState::new();
 
@@ -669,18 +657,14 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
 
     let start_x = screen_width / 2 - box_width / 2;
     let start_y = screen_height / 2 - box_height / 2;
-    let mut try_again = true;
+
+    let mut chosen = 0;
 
     loop {
         // print background image
         print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-        for row in 0..=screen_height {
-            println!(
-                "{}\r",
-                std::iter::repeat(" ")
-                    .take(screen_width as usize)
-                    .collect::<String>()
-            )
+        for _row in 0..=screen_height {
+            println!("{}\r", " ".repeat(screen_width as usize),)
         }
 
         // print menu
@@ -697,7 +681,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 1,
             start_x,
-            "You Won!",
+            "You won!",
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -705,7 +689,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 2,
             start_x,
-            format!("time: {:.2}s", time),
+            format!("Time: {:.2}s", time),
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -713,10 +697,13 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
             "{esc}[{};{}H|{:^3$}|",
             start_y + 3,
             start_x,
-            "Choose Name",
+            "Choose name to save result:",
             (box_width - 2) as usize,
             esc = 27 as char
         );
+        if chosen == 0 {
+            print!("{esc}[48;2;46;46;46m", esc = 27 as char);
+        }
         println!(
             "{esc}[{};{}H|{:^3$}|",
             start_y + 4,
@@ -725,11 +712,12 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
             (box_width - 2) as usize,
             esc = 27 as char
         );
+        print!("{esc}[48;2;0;0;0m", esc = 27 as char);
         println!(
             "{esc}[{};{}H|{:^3$}|",
             start_y + 5,
             start_x,
-            "---leaders---",
+            "---LEADERS---",
             (box_width - 2) as usize,
             esc = 27 as char
         );
@@ -761,11 +749,11 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
             "{esc}[{};{}H|{: ^3$}|",
             start_y + box_height - 2,
             start_x,
-            "try again?",
+            "Try again?",
             (box_width - 2) as usize,
             esc = 27 as char
         );
-        if try_again {
+        if chosen == 1 {
             print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
@@ -777,7 +765,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
             esc = 27 as char
         );
         print!("{esc}[48;2;0;0;0m", esc = 27 as char);
-        if !try_again {
+        if chosen == 2 {
             print!("{esc}[48;2;46;46;46m", esc = 27 as char);
         }
         println!(
@@ -799,7 +787,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
             esc = 27 as char
         );
         println!(
-            "{esc}[{};{}H{}",
+            "{esc}[{};{}Hid: {}",
             start_y + box_height + 2,
             start_x,
             id,
@@ -812,39 +800,48 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> bool {
         'input_loop: loop {
             let keys = device_state.get_keys();
 
-            for key in keys_keycode {
-                if keys.contains(&key.0) {
+            for key in KEYS_KEYCODE {
+                if keys.contains(&key.0) && chosen == 0 {
                     if keys.contains(&Keycode::LShift) {
-                        name += &key.2;
+                        name += key.2;
                     } else {
-                        name += &key.1;
+                        name += key.1;
                     }
                     break 'input_loop;
                 }
             }
 
-            if keys.contains(&Keycode::Backspace) {
+            if keys.contains(&Keycode::Backspace) && chosen == 0 {
                 name.pop();
                 break;
             }
 
-            if keys.contains(&Keycode::Down) {
-                try_again = !try_again;
+            if keys.contains(&Keycode::Down) && chosen != 2 {
+                chosen += 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Up) {
-                try_again = !try_again;
+            if keys.contains(&Keycode::Up) && chosen != 0 {
+                chosen -= 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Enter) {
+            if keys.contains(&Keycode::Enter) && chosen != 0 {
                 if !name.is_empty() {
                     let _ = reqwest::blocking::get(&format!(
                         "http://danielsson.pythonanywhere.com/log_result/{id}/{name}/{time}"
                     ));
                 }
-                return try_again;
+                return chosen;
+            }
+            if keys.contains(&Keycode::Enter) && chosen == 0 {
+                chosen += 1;
+                audio::play_audio(&audio_handle, "./sounds/pop.mp3");
+                break;
+            }
+            if keys.contains(&Keycode::E) && chosen != 0 {
+                exit();
+                break;
             }
         }
     }
@@ -857,7 +854,7 @@ pub fn exit() -> bool {
     let screen_height = screen_height as u16;
 
     let box_width: u16 = 30;
-    let mut box_height = 5;
+    let box_height = 5;
 
     let (_stream, audio_handle) = OutputStream::try_default().unwrap();
 
@@ -868,13 +865,8 @@ pub fn exit() -> bool {
     loop {
         // print background image
         print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
-        for row in 0..=screen_height {
-            println!(
-                "{}\r",
-                std::iter::repeat(" ")
-                    .take(screen_width as usize)
-                    .collect::<String>()
-            )
+        for _row in 0..=screen_height {
+            println!("{}\r", " ".repeat(screen_width as usize),)
         }
 
         // print menu

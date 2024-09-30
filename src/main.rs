@@ -1,17 +1,12 @@
-use crossterm::cursor::Hide;
-use crossterm::{self, ExecutableCommand};
-use device_query::{self, DeviceQuery, DeviceState, Keycode};
+use crossterm::{self};
+use device_query::{self};
 use loader::*;
 use mat::Vec3;
 use renderer::Screen;
-use rodio::{source::Source, Decoder, OutputStream};
+use rodio::OutputStream;
 use std::env;
-use std::ffi::OsStr;
-use std::fs::File;
-use std::io::BufReader;
+use std::fs;
 use std::path::PathBuf;
-use std::thread;
-use std::{fs, io};
 
 mod audio;
 mod camera;
@@ -26,7 +21,7 @@ fn main() {
     let entries = fs::read_dir(level_dir).unwrap();
     let levels: Vec<PathBuf> = entries.map(|e| e.unwrap().path()).collect();
     let (_stream, stream_handle) = OutputStream::try_default().expect("couldnt get sound handle!");
-    let _ = crossterm::terminal::enable_raw_mode().unwrap();
+    crossterm::terminal::enable_raw_mode().unwrap();
     loop {
         let chosen_level = screens::menu(levels.clone(), &stream_handle);
         let map = loader::load(&levels[chosen_level]);
@@ -55,13 +50,23 @@ fn main() {
         loop {
             match game.run(map.clone(), &stream_handle) {
                 Ok(time) => {
-                    if screens::finish(time, &map.level_name, &map.map_string) {
+                    if screens::finish(time, &map.level_name, &map.map_string) == 1 {
                         continue;
                     }
                 }
                 Err(e) => match e {
-                    "death" => {
-                        if screens::game_over("You died!") {
+                    "void" => {
+                        if screens::game_over("You fell into the void!") {
+                            continue;
+                        }
+                    }
+                    "angry_pixel" => {
+                        if screens::game_over("Angry pixel killed you!") {
+                            continue;
+                        }
+                    }
+                    "spike" => {
+                        if screens::game_over("You died of spike!") {
                             continue;
                         }
                     }

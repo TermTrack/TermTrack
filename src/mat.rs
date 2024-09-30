@@ -46,7 +46,7 @@ impl Vec3 {
     pub fn rotate(self, rotation: Vec3) -> Vec3 {
         let ret = self.rotate_z(rotation.z);
         let ret = ret.rotate_x(rotation.y);
-        return ret.rotate_y(rotation.x);
+        ret.rotate_y(rotation.x)
     }
 
     pub fn rotate_x(self, angle: f64) -> Vec3 {
@@ -118,7 +118,7 @@ impl Tri {
         let t = ro - self.v0;
         let inv_det = 1. / det;
         let u = t.dot(p) * inv_det;
-        if u < 0. || u > 1. {
+        if !(0. ..=1.).contains(&u) {
             return (false, f64::INFINITY);
         }
         let q = t.cross(e1);
@@ -174,20 +174,20 @@ impl Mesh {
         self.tris.clone()
     }
 
-    pub fn gpu_buffer_data(&self) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
-        let mut verts = vec![];
-        let mut colors = vec![];
-        for tri in self.tris() {
-            verts.push([tri.v0.x, tri.v0.y, tri.v0.z]);
-            verts.push([tri.v1.x, tri.v1.y, tri.v1.z]);
-            verts.push([tri.v2.x, tri.v2.y, tri.v2.z]);
-            colors.push([tri.color.x, tri.color.y, tri.color.z]);
-        }
-        return (verts, colors);
-    }
+    // pub fn gpu_buffer_data(&self) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
+    //     let mut verts = vec![];
+    //     let mut colors = vec![];
+    //     for tri in self.tris() {
+    //         verts.push([tri.v0.x, tri.v0.y, tri.v0.z]);
+    //         verts.push([tri.v1.x, tri.v1.y, tri.v1.z]);
+    //         verts.push([tri.v2.x, tri.v2.y, tri.v2.z]);
+    //         colors.push([tri.color.x, tri.color.y, tri.color.z]);
+    //     }
+    //     (verts, colors)
+    // }
 
     pub fn mut_tris(&mut self) -> &mut Vec<Tri> {
-        return &mut self.tris;
+        &mut self.tris
     }
 }
 
@@ -300,7 +300,7 @@ pub fn check_collision(
     pos: &mut Vec3,
     vel: &mut Vec3,
     dt: f64,
-    colliders: &Vec<BoxCollider>,
+    colliders: &[BoxCollider],
     grounded: &mut bool,
 ) -> Option<&'static str> {
     let dir = Vec3 {
@@ -310,7 +310,7 @@ pub fn check_collision(
     };
 
     let mut next_pc = pcollider.clone();
-    next_pc.translate(pos.clone());
+    next_pc.translate(*pos);
     next_pc.translate(Vec3 {
         x: vel.x * dt,
         y: 0.,
@@ -335,7 +335,7 @@ pub fn check_collision(
 
             vel.x = 0.;
             next_pc = pcollider.clone();
-            next_pc.translate(pos.clone());
+            next_pc.translate(*pos);
         }
     }
     next_pc.translate(Vec3 {
@@ -360,7 +360,7 @@ pub fn check_collision(
 
             vel.y = 0.;
             next_pc = pcollider.clone();
-            next_pc.translate(pos.clone());
+            next_pc.translate(*pos);
         }
     }
     next_pc.translate(Vec3 {
@@ -384,7 +384,7 @@ pub fn check_collision(
 
             vel.z = 0.;
             next_pc = pcollider.clone();
-            next_pc.translate(pos.clone());
+            next_pc.translate(*pos);
         }
     }
 
