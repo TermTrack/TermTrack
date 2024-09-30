@@ -5,8 +5,8 @@ use mat::Vec3;
 use renderer::Screen;
 use rodio::OutputStream;
 use std::env;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 mod audio;
 mod camera;
@@ -50,7 +50,7 @@ fn main() {
         loop {
             match game.run(map.clone(), &stream_handle) {
                 Ok(time) => {
-                    if screens::finish(time, &map.level_name) == 1 {
+                    if screens::finish(time, &map.level_name, &map.map_string) == 1 {
                         continue;
                     }
                 }
@@ -70,6 +70,7 @@ fn main() {
                             continue;
                         }
                     }
+                    "menu" => (),
                     _ => {
                         if screens::game_over("You failed!") {
                             continue;

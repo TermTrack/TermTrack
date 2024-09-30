@@ -161,6 +161,7 @@ impl Enemy {
     }
 }
 
+#[derive(Clone)]
 pub struct Game {
     pub renderer: Screen,
     pub camera: Camera,
@@ -218,17 +219,30 @@ impl Game {
             let dt = time.elapsed().as_secs_f64();
             time = Instant::now();
 
-            // get list off all vertices
-
-            let fps_text = &format!("fps: {:.2?} ", 1. / (dt));
-            let timer_text = &format!("time: {:.1?} ", level_timer.elapsed());
-            let floor_text = &format!(
+            let fps_text = format!("fps: {:.2?} ", 1. / (dt));
+            let timer_text = format!("time: {:.1?} ", level_timer.elapsed());
+            let floor_text = format!(
                 "floor: {}/{}",
                 (-self.camera.pos.y.div_euclid(GH)).clamp(0., floors as f64) as usize,
                 floors
             );
 
             let dt = dt.min(0.2);
+
+            //update enemies
+            let mut render_mesh = mesh.clone();
+            let mut cols = colliders.clone();
+            for enemy in enemies.iter_mut() {
+                enemy.update(dt, self.camera.pos, &colliders);
+                cols.push(enemy.get_collider());
+                render_mesh = render_mesh + enemy.get_mesh();
+            }
+
+            // render vertices in parallel thread.
+            let cam = self.camera.clone();
+            let renderer = self.renderer.clone();
+            let render_thread =
+                thread::spawn(move || renderer.render_pruned_mt(&cam, &render_mesh));
 
             // handle input
             let mouse = device_state.get_mouse();
@@ -238,7 +252,9 @@ impl Game {
                 let time1 = time.elapsed();
                 let timer_1 = level_timer.elapsed();
 
-                screens::exit();
+                if screens::exit() {
+                    return Err("menu");
+                };
                 time = Instant::now().checked_sub(time1).unwrap();
                 level_timer = Instant::now().checked_sub(timer_1).unwrap();
             }
@@ -317,13 +333,6 @@ impl Game {
             self.camera.vel.y += GRAVITY * dt;
 
             //update enemies
-            let mut render_mesh = mesh.clone();
-            let mut cols = colliders.clone();
-            for enemy in enemies.iter_mut() {
-                enemy.update(dt, self.camera.pos, &colliders);
-                cols.push(enemy.get_collider());
-                render_mesh = render_mesh + enemy.get_mesh();
-            }
 
             // collision
             let mut current_pc = BoxCollider::new(PLAYER_COLLIDER.0, PLAYER_COLLIDER.1, None);
@@ -352,6 +361,16 @@ impl Game {
             }
 
             self.camera.update_pos(dt);
+
+            //print to when rendering is finished screen
+            if let Ok(buffer) = render_thread.join() {
+                self.renderer.flush(
+                    &buffer,
+                    false,
+                    &format!("{}{}{}", &fps_text, &timer_text, &floor_text),
+                );
+            }
+
             // jump
             if grounded && keys.contains(&Keycode::Space) {
                 self.camera.vel.y = -JUMP_SPEED;
@@ -361,14 +380,6 @@ impl Game {
             if self.camera.pos.y > GW * (floors + 10) as f64 {
                 return Err("void");
             }
-
-            // render vertices
-            self.renderer.render_pruned_mt(
-                &self.camera,
-                &render_mesh,
-                &format!("{}{}{}", fps_text, timer_text, floor_text),
-                true,
-            );
         }
     }
 }
