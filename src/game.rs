@@ -31,7 +31,7 @@ impl Default for Enemy {
                 y: GH * 0.5,
                 z: GW * 0.5,
             },
-            speed: 20.,
+            speed: 23.,
             vel: Vec3 {
                 x: 0.,
                 y: 0.,
@@ -167,7 +167,7 @@ pub struct Game {
     pub camera: Camera,
 }
 
-const SPEED: f64 = 27.;
+const SPEED: f64 = 28.;
 const JUMP_SPEED: f64 = 47.5;
 const ROTATION_SPEED: f64 = 2.5;
 const GRAVITY: f64 = 105.;
