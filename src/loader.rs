@@ -469,9 +469,9 @@ pub fn load(path: &PathBuf) -> LevelMap {
 
                     'S' => {
                         start = (
-                            z as f64 * GW + GW / 2.,
-                            level as f64 * GH + GH * 0.5,
                             x as f64 * GW + GW / 2.,
+                            level as f64 * GH + GH * 0.5,
+                            z as f64 * GW + GW / 2.,
                         );
                         grid = Mesh::new(Vec::from(START));
                         colliders_grid.push(BoxCollider::new(

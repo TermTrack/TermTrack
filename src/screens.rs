@@ -562,13 +562,13 @@ pub fn leaderboard(level_id: String, level_name: String) -> bool {
     let leader_vec = leader_board.as_array_mut().expect("leaderboard error");
     let take = leader_vec.len().min(screen_height as usize - 10);
 
-    // leader_vec.sort_by_key(|val| {
-    //     (val.get("time")
-    //         .expect("leaderboard format wrong")
-    //         .as_f64()
-    //         .expect("leaderboard format wrong")
-    //         * 1000.) as usize
-    // });
+    leader_vec.sort_by_key(|val| {
+        (val.get("time")
+            .expect("leaderboard format wrong")
+            .as_f64()
+            .expect("leaderboard format wrong")
+            * 1000.) as usize
+    });
 
     // print background image
     print!("{esc}[H{esc}[48;2;0;0;0m", esc = 27 as char);
