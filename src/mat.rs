@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Sub};
 
+use device_query::{DeviceQuery, Keycode};
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec3 {
     pub x: f64,
@@ -324,7 +326,6 @@ pub fn check_collision(
         if next_pc.intersects(collider) {
             if let Some(tag) = collider.tag {
                 t = Some(tag);
-                println!("{tag}");
             }
             // calculate collided distance, set position to not colliding & delete velocity in x direction
             if dir.x < 0. {
@@ -348,7 +349,6 @@ pub fn check_collision(
         if next_pc.intersects(collider) {
             if let Some(tag) = collider.tag {
                 t = Some(tag);
-                println!("{tag}");
             }
             // calculate collided distance, set position to not colliding & delete velocity in x direction
             if dir.y < 0. {
@@ -373,7 +373,6 @@ pub fn check_collision(
         if next_pc.intersects(collider) {
             if let Some(tag) = collider.tag {
                 t = Some(tag);
-                println!("{tag}");
             }
             // calculate collided distance, set position to not colliding & delete velocity in x direction
             if dir.z < 0. {
@@ -389,4 +388,13 @@ pub fn check_collision(
     }
 
     t
+}
+
+pub fn get_keys_conditional(check: bool) -> Vec<Keycode> {
+    let keys = device_query::DeviceState::new();
+    let mut keys = keys.get_keys();
+    if !check {
+        keys = vec![];
+    }
+    keys
 }

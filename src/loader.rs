@@ -1,4 +1,4 @@
-use crate::game::Enemy;
+use crate::enemies::Enemy;
 use crate::mat::*;
 use std::fs;
 use std::path::PathBuf;

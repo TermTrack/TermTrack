@@ -1,4 +1,5 @@
 use std::io::{stdin, Read};
+use std::sync::{Arc, Mutex};
 use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
@@ -6,7 +7,7 @@ use rodio::OutputStream;
 use rodio::OutputStreamHandle;
 use serde_json::{json, Value};
 
-use crate::{audio, screens};
+use crate::{audio, mat, screens};
 
 use crate::renderer;
 
@@ -246,7 +247,11 @@ pub fn menu_print() {
     let box_width: u16 = menu_width / 2 - 2;
 }
 
-pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
+pub fn menu(
+    levels: Vec<PathBuf>,
+    audio_handle: &OutputStreamHandle,
+    focused: Arc<Mutex<bool>>,
+) -> usize {
     let device_state = DeviceState::new();
     let mut chosen_level = 0;
     let level_names: Vec<&OsStr> = levels
@@ -498,7 +503,7 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
 
         //match input
         loop {
-            let keys = device_state.get_keys();
+            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
 
             if keys.contains(&Keycode::Down) && chosen_level != level_names.len() as u16 - 1 {
                 chosen_level += 1;
@@ -523,6 +528,7 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
                         .to_str()
                         .unwrap()
                         .to_string(),
+                    focused.clone(),
                 )) {
                     exit_app();
                 };
@@ -530,7 +536,7 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
                 break;
             }
             if keys.contains(&Keycode::E) {
-                if screens::exit() {
+                if screens::exit(focused.clone()) {
                     exit_app();
                 };
                 menu_print();
@@ -540,7 +546,7 @@ pub fn menu(levels: Vec<PathBuf>, audio_handle: &OutputStreamHandle) -> usize {
     }
 }
 
-pub fn leaderboard(level_id: String, level_name: String) -> bool {
+pub fn leaderboard(level_id: String, level_name: String, focused: Arc<Mutex<bool>>) -> bool {
     let device_state = DeviceState::new();
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
@@ -652,7 +658,7 @@ pub fn leaderboard(level_id: String, level_name: String) -> bool {
 
         //match input
         loop {
-            let keys = device_state.get_keys();
+            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
 
             if keys.contains(&Keycode::Up) {
                 scroll = scroll.saturating_sub(1);
@@ -672,7 +678,7 @@ pub fn leaderboard(level_id: String, level_name: String) -> bool {
     }
 }
 
-pub fn game_over(arg: &str) -> bool {
+pub fn game_over(arg: &str, focused: Arc<Mutex<bool>>) -> bool {
     let device_state = DeviceState::new();
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
@@ -757,7 +763,7 @@ pub fn game_over(arg: &str) -> bool {
 
         //match input
         loop {
-            let keys = device_state.get_keys();
+            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
 
             if keys.contains(&Keycode::Down) {
                 try_again = !try_again;
@@ -773,7 +779,7 @@ pub fn game_over(arg: &str) -> bool {
                 return try_again;
             }
             if keys.contains(&Keycode::E) {
-                if exit() {
+                if exit(focused.clone()) {
                     exit_app();
                 }
                 break;
@@ -782,7 +788,7 @@ pub fn game_over(arg: &str) -> bool {
     }
 }
 
-pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
+pub fn finish(time: f64, level_name: &str, level_map: &str, focused: Arc<Mutex<bool>>) -> u8 {
     // get device state for input
     let device_state = DeviceState::new();
 
@@ -806,13 +812,13 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
     };
     let mut leader_board: Value = serde_json::from_str(&leader_board).unwrap_or(json!([]));
     let leader_vec = leader_board.as_array_mut().expect("leaderboard error");
-    // leader_vec.sort_by_key(|val| {
-    //     (val.get("time")
-    //         .expect("leaderboard format wrong")
-    //         .as_f64()
-    //         .expect("leaderboard format wrong")
-    //         * 1000.) as usize
-    // });
+    leader_vec.sort_by_key(|val| {
+        (val.get("time")
+            .expect("leaderboard format wrong")
+            .as_f64()
+            .expect("leaderboard format wrong")
+            * 1000.) as usize
+    });
     let mut name = String::new();
 
     let take = leader_vec.len().min(5);
@@ -967,7 +973,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
 
         //match input
         'input_loop: loop {
-            let keys = device_state.get_keys();
+            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
 
             for key in KEYS_KEYCODE {
                 if keys.contains(&key.0) && chosen == 0 {
@@ -1009,7 +1015,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
                 break;
             }
             if keys.contains(&Keycode::E) && chosen != 0 {
-                if exit() {
+                if exit(focused.clone()) {
                     exit_app();
                 }
                 break;
@@ -1018,7 +1024,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
     }
 }
 
-pub fn exit() -> bool {
+pub fn exit(focused: Arc<Mutex<bool>>) -> bool {
     let device_state = DeviceState::new();
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
@@ -1104,7 +1110,7 @@ pub fn exit() -> bool {
 
         //match input
         loop {
-            let keys = device_state.get_keys();
+            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
 
             if keys.contains(&Keycode::Down) || keys.contains(&Keycode::Up) {
                 exit = !exit;
