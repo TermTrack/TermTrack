@@ -955,13 +955,13 @@ pub fn finish(time: f64, level_name: &str, level_map: &str) -> u8 {
             (box_width - 2) as usize,
             esc = 27 as char
         );
-        println!(
-            "{esc}[{};{}Hid: {}",
-            start_y + box_height + 2,
-            start_x,
-            id,
-            esc = 27 as char
-        );
+        // println!(
+        //     "{esc}[{};{}Hid: {}",
+        //     start_y + box_height + 2,
+        //     start_x,
+        //     id,
+        //     esc = 27 as char
+        // );
 
         thread::sleep_ms(200);
 
