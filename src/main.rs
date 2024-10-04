@@ -19,6 +19,7 @@ mod enemies;
 mod game;
 mod loader;
 mod mat;
+mod network;
 mod renderer;
 mod screens;
 

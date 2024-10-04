@@ -7,7 +7,7 @@ use rodio::OutputStream;
 use rodio::OutputStreamHandle;
 use serde_json::{json, Value};
 
-use crate::{audio, mat, screens};
+use crate::{audio, mat, network, screens};
 
 use crate::renderer;
 
@@ -557,14 +557,7 @@ pub fn leaderboard(level_id: String, level_name: String, focused: Arc<Mutex<bool
     let margin = 3;
     let mut scroll: usize = 0;
 
-    // get leaderboard
-    let leader_board = match reqwest::blocking::get(&format!(
-        "http://danielsson.pythonanywhere.com/get_result/{level_id}"
-    )) {
-        Ok(resp) => resp.text().unwrap(),
-        Err(resp) => panic!("Err: {}", resp),
-    };
-    let mut leader_board: Value = serde_json::from_str(&leader_board).unwrap_or(json!([]));
+    let mut leader_board = network::get_leader_board(&level_id);
     let leader_vec = leader_board.as_array_mut().expect("leaderboard error");
     let take = leader_vec.len().min(screen_height as usize - 10);
 
@@ -804,13 +797,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str, focused: Arc<Mutex<b
     let id = level_name.to_string() + &crc32fast::hash(level_map.as_bytes()).to_string();
 
     // get the leaderboard
-    let leader_board = match reqwest::blocking::get(&format!(
-        "http://danielsson.pythonanywhere.com/get_result/{id}"
-    )) {
-        Ok(resp) => resp.text().unwrap(),
-        Err(resp) => panic!("Err: {}", resp),
-    };
-    let mut leader_board: Value = serde_json::from_str(&leader_board).unwrap_or(json!([]));
+    let mut leader_board = network::get_leader_board(&id);
     let leader_vec = leader_board.as_array_mut().expect("leaderboard error");
     leader_vec.sort_by_key(|val| {
         (val.get("time")
@@ -1003,9 +990,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str, focused: Arc<Mutex<b
             }
             if keys.contains(&Keycode::Enter) && chosen != 0 {
                 if !name.is_empty() {
-                    let _ = reqwest::blocking::get(&format!(
-                        "http://danielsson.pythonanywhere.com/log_result/{id}/{name}/{time}"
-                    ));
+                    network::log_result(&id, &name, time);
                 }
                 return chosen;
             }
