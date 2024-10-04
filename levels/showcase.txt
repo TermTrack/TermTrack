@@ -1,0 +1,44 @@
+   XX
+  X.xX
+  X X
+  X X
+  X.X
+ XX.X
+XS..X
+ XX.X
+  X.X
+  X X
+  X.X
+  X X
+  X.xX
+   XX
+sep
+   XXX
+  X  .X
+  X XvX
+  X X X
+  X X.X
+ XX X.XXXXXXXX
+X   X..v.v...xX
+ XX X.XXXXX.XX
+  X X.X   X.X
+  X X.X   X X
+  X X.X   XvX
+  X X.XXXXX.X
+  X  .......X
+   XXXXXXXXX
+sep
+   XXX
+  X   X
+  X X X       XXXXXXXX
+  X X X      X...e....X
+  X X X      X...v....X
+ XX X XXXXXXXX.. . ...X
+X   X         ...v....E
+ XX X XXXXX XX.. . ...X
+  X X X   X XX...v....X
+  X X X   X XX...e....X
+  X X X   X X XXXXXXXX
+  X X XXXXX X
+  X         X
+   XXXXXXXXX

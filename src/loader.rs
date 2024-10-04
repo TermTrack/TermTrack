@@ -377,10 +377,7 @@ const END: [(f64, f64, f64); 8 * 12] = [
     (1000., 1000., 1000.),
 ];
 
-const GOAL_COLLIDER: [(f64, f64, f64); 2] = [
-    (GW * 0.1, GH * 0.9, GW * 0.1),
-    (GW * 0.9, GH * 0.1, GW * 0.9),
-];
+const GOAL_COLLIDER: [(f64, f64, f64); 2] = [(0., GH * 0.9, 0.), (GW, GH * 0.1, GW)];
 
 const SPIKE_COLLIDER: [(f64, f64, f64); 2] = [(0., GH * 0.9, 0.), (GW, GH * 0.8, GW)];
 const SPIKE: [(f64, f64, f64); 4 * 4] = [
