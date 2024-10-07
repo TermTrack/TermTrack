@@ -6,16 +6,21 @@ https://github.com/user-attachments/assets/27e9e3ad-81ff-4e92-977d-c8ae899da69b
 ## Requirements
 You will need a terminal to play this game. But all teminals are not created the same. For the moment we recommend that you use [windows-terminal](https://www.microsoft.com/store/productId/9N0DX20HK701?ocid=pdpshare) availible in the microsoft store (further testing will be done in the future)
 
-## Install and Run
+## Install
 ### Windows
-Install the zip-folder from the releases section or using the link: [https://tagedan.github.io/TermTrack/;TERMTRACK;%20.zip](https://termtrack.github.io/TermTrack/;TERMTRACK;%20.zip)
-Extract it into a folder of your choice and then run it using this terminal command in the "TermTrack" folder:
+Install the zip-folder from the releases section or using the link: [https://tagedan.github.io/TermTrack/TERMTRACK_WINDOWS.zip](https://termtrack.github.io/TermTrack/TERMTRACK_WINDOWS.zip)
+Extract it into a folder of your choice.
+### Linux
+Install the zip-folder from the releases section or using the link: [https://tagedan.github.io/TermTrack/TERMTRACK_LINUX.zip](https://termtrack.github.io/TermTrack/TERMTRACK_LINUX.zip)
+Extract it into a folder of your choice.
+
+## Run
+In the extracted "TermTrack" folder run:
 ```bash
 example/TermTrack> termtrack level_pack_0
 ```
 where ```level_pack_0``` can be substituted for the name of the folder containing the levels you want to play.
-### Linux/Unix
-Coming up
+
 ### From source
 Unfortunaly, due to the need of a secret salt to validate the leaderboard you cannot build this project from source and expect it to work with the leaderboard. We are working on a seperate branch where the leaderboard will instead be local and therefore can be built from source.
 ## Level Layout/Creation
