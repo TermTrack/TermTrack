@@ -1,6 +1,8 @@
 # TermTrack
 A terminal-rendered 3D platforming/maze game with focus on speedrunning and custom level creation
 
+https://github.com/user-attachments/assets/27e9e3ad-81ff-4e92-977d-c8ae899da69b
+
 ## Requirements
 You will need a terminal to play this game. But all teminals are not created the same. For the moment we recommend that you use [windows-terminal](https://www.microsoft.com/store/productId/9N0DX20HK701?ocid=pdpshare) availible in the microsoft store (further testing will be done in the future)
 
