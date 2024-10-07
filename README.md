@@ -55,5 +55,9 @@ TermTrack> termtrack <level_folder_name>
 ```
 replacing `<level_folder_name>` with the name of your folder.
 
-
+## Acknowledgements
+- [abbfelarb](https://github.com/abbfelarb) - Owner
+- [TageDan](https://github.com/TageDan) - Owner
+- [GustavPetterssonBjorklund](https://github.com/GustavPetterssonBjorklund) - For suggesting security actions
+- The Rust programming language and The terminal :) - for making this possible
 
