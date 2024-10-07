@@ -51,7 +51,7 @@ XXX
 This level will have two floors with the lower floor containing the start and the stair to the second floor as well as a spike between them and the upper floor containing the end.
 To then play the lavel you need to put it into a folder next to termtrack.exe and then run:
 ```bash
-TermTrack> termtrack <level_folder_name>
+TermTrack> termtrack <level_folder_name> 
 ```
 replacing `<level_folder_name>` with the name of your folder.
 
