@@ -6,7 +6,7 @@ You will need a terminal to play this game. But all teminals are not created the
 
 ## Install and Run
 ### Windows
-Install the zip-folder from the releases section or using the link: https://tagedan.github.io/TermTrack/;TERMTRACK;%20.zip
+Install the zip-folder from the releases section or using the link: [https://tagedan.github.io/TermTrack/;TERMTRACK;%20.zip](https://termtrack.github.io/TermTrack/;TERMTRACK;%20.zip)
 Extract it into a folder of your choice and then run it using this terminal command in the "TermTrack" folder:
 ```bash
 example/TermTrack> termtrack level_pack_0
