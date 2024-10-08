@@ -66,5 +66,6 @@ replacing `<level_folder_name>` with the name of your folder.
 - [abbfelarb](https://github.com/abbfelarb) - Owner
 - [TageDan](https://github.com/TageDan) - Owner
 - [GustavPetterssonBjorklund](https://github.com/GustavPetterssonBjorklund) - For suggesting security actions
+- https://patorjk.com/software/taag/ - for generating the title-art
 - The Rust programming language and The terminal :) - for making this possible
 
