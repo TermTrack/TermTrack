@@ -23,6 +23,7 @@ where ```level_pack_0``` can be substituted for the name of the folder containin
 
 ### From source
 Unfortunaly, due to the need of a secret salt to validate the leaderboard you cannot build this project from source and expect it to work with the leaderboard. We are working on a seperate branch where the leaderboard will instead be local and therefore can be built from source.
+
 ## Level Layout/Creation
 A level is represented by a textfile with the format level_name.txt (or any other file extention, everything up until the last '.' will be the level name)
 To build a level you write characters that will represent the grid of the actual level. There are 8 grid-types at the moment, these are:
@@ -61,6 +62,25 @@ To then play the lavel you need to put it into a folder next to termtrack.exe an
 TermTrack> termtrack <level_folder_name> 
 ```
 replacing `<level_folder_name>` with the name of your folder.
+
+## Known bugs
+Lazy error handling of network-requests leads to game crashing when offline. 
+Leaderboard validation is faulty. 
+Terminal focus can be hard to regain when lost.
+Music crackling on high load.
+
+## Future plans
+- [X] [Standalone Leaderboard](https://github.com/TermTrack/TrackLeaderboard)
+- [ ] Enemy sound
+- [ ] [Level Editor](https://github.com/TermTrack/TrackEditor)
+- [ ] Discord Bot
+- [ ] 3D-object file loader
+
+## Support
+If you have any questions, please look at the discussions to see if it has already been answered or start a new discussion.
+
+## Contributing
+Feel free to create a issue if you have a feature that you would like to see implemented. You are also free to fork the project and make a pr if you have made an improvement.
 
 ## Acknowledgements
 - [abbfelarb](https://github.com/abbfelarb) - Owner
