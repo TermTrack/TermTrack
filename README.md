@@ -77,7 +77,7 @@ Music crackling on high load.
 - [ ] 3D-object file loader
 
 ## Support
-If you have any questions, please look at the discussions to see if it has already been answered or start a new discussion.
+If you have any questions, please look at the github-discussions tab to see if it has already been answered or start a new discussion.
 
 ## Contributing
 Feel free to create a issue if you have a feature that you would like to see implemented. You are also free to fork the project and make a pr if you have made an improvement.
