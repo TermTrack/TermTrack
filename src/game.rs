@@ -1,4 +1,3 @@
-use device_query::{DeviceQuery, DeviceState, Keycode};
 use rodio::OutputStreamHandle;
 
 use rodio::{source::Source, OutputStream};
@@ -14,10 +13,12 @@ use core::panic;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use crate::Keys;
 
 #[derive(Clone)]
 pub struct Game {
-    pub renderer: Screen,
+    pub renderer: Screen
+    ,
     pub camera: Camera,
 }
 
@@ -34,6 +35,7 @@ impl Game {
         map: loader::LevelMap,
         audio_handle: &OutputStreamHandle,
         focused: Arc<Mutex<bool>>,
+        keys: Arc<Mutex<Keys>>
     ) -> Result<f64, &str> {
         // load map files
         // generate map meshes
@@ -47,8 +49,8 @@ impl Game {
             mut enemies,
         } = map;
 
-        self.camera.pos = Vec3 {
-            x: start.0,
+        self.camera.pos = Vec3{
+            x: start.0 ,
             y: start.1,
             z: start.2,
         };
@@ -56,10 +58,8 @@ impl Game {
         let mut level_timer = 0.;
 
         // timer for fps
-        let mut time = Instant::now();
+        let mut time =Instant::now();
 
-        // device for input
-        let device_state = DeviceState::new();
 
         let floors = renderer::map_as_vec_of_floors(&map_string).len();
 
@@ -73,6 +73,7 @@ impl Game {
         let mut started = false;
 
         loop {
+            
             // reset timer for dt
             let dt = time.elapsed().as_secs_f64();
             time = Instant::now();
@@ -97,7 +98,7 @@ impl Game {
             let mut render_mesh = mesh.clone();
             let mut cols = colliders.clone();
             for enemy in enemies.iter_mut() {
-                enemy.update(dt, self.camera.pos, &colliders);
+                enemy.update(dt, Vec3{x:self.camera.pos.x as f64, y:self.camera.pos.y as f64, z:self.camera.pos.z as f64}, &colliders);
                 cols.push(enemy.get_collider());
                 render_mesh = render_mesh + enemy.get_mesh();
             }
@@ -105,11 +106,29 @@ impl Game {
             // render vertices in parallel thread.
             let cam = self.camera.clone();
             let renderer = self.renderer.clone();
-            let render_thread =
-                thread::spawn(move || renderer.render_pruned_mt(&cam, &render_mesh));
 
+            let mut new_tris = Vec::with_capacity(render_mesh.tris.len());
+            for Tri { v0, v1, v2, color } in render_mesh.tris.into_iter() {
+                new_tris.push(terminal_renderer::math::Tri::new(terminal_renderer::glam::vec3(v0.x as f32, v0.y as f32, v0.z as f32), terminal_renderer::glam::vec3(v1.x as f32, v1.y as f32, v1.z as f32), terminal_renderer::glam::vec3(v2.x as f32, v2.y as f32, v2.z as f32), terminal_renderer::glam::vec3(color.x as f32, color.y as f32, color.z as f32)))
+            }
+            let render_mesh = terminal_renderer::math::Mesh::new(new_tris);
+
+            let new_cam = terminal_renderer::renderer::Camera {
+                pos: terminal_renderer::glam::vec3(cam.pos.x as f32, cam.pos.y as f32, cam.pos.z as f32),
+                rotation: terminal_renderer::glam::vec3(cam.rotation.y as f32, cam.rotation.x as f32, cam.rotation.z as f32)
+            };
+
+            let n_renderer = terminal_renderer::renderer::Screen {
+                w: renderer.w,
+                h: renderer.h*2-2,
+                focus_dist: cam.focus_length as f32
+            };
+            
+            n_renderer.render_octree(&new_cam, &render_mesh, &[]);
+             
             // get held keys
-            let keys = device_state.get_keys();
+            let key_list = keys.lock().unwrap().clone_reset_enter(); 
+            
             // initialized velocity:w
 
             let mut v = Vec3 {
@@ -120,21 +139,22 @@ impl Game {
 
             // handle input
             if *focused.lock().unwrap() {
-                if keys.contains(&Keycode::E) {
+                if key_list.e {
                     let time1 = time.elapsed();
 
-                    if screens::exit(focused.clone()) {
+                    if screens::exit(focused.clone(), keys.clone()) {
                         return Err("menu");
                     };
                     time = Instant::now().checked_sub(time1).unwrap();
                 }
-                if keys.contains(&Keycode::M) {
+                if key_list.m {
                     let time1 = time.elapsed();
                     time = Instant::now();
                     self.renderer
                         .render_map(&map_string, self.camera.pos, loader::GW, loader::GH);
                     loop {
-                        if device_state.get_keys().contains(&Keycode::M) {
+                        thread::sleep_ms(10);
+                        if keys.lock().unwrap().m {
                             if time.elapsed() < Duration::from_millis(150) {
                                 continue;
                             }
@@ -144,20 +164,20 @@ impl Game {
                     }
                     time = Instant::now().checked_sub(time1).unwrap();
                 }
-                if keys.contains(&Keycode::Left) {
+                if key_list.left {
                     self.camera.rotation.x -= ROTATION_SPEED * dt;
                 }
-                if keys.contains(&Keycode::Right) {
+                if key_list.right {
                     self.camera.rotation.x += ROTATION_SPEED * dt;
                 }
-                if keys.contains(&Keycode::Up) && self.camera.rotation.y < 1.5 {
+                if key_list.up && self.camera.rotation.y < 1.5 {
                     self.camera.rotation.y += ROTATION_SPEED * dt;
                 }
-                if keys.contains(&Keycode::Down) && self.camera.rotation.y > -1.5 {
+                if key_list.down && self.camera.rotation.y > -1.5 {
                     self.camera.rotation.y -= ROTATION_SPEED * dt;
                 }
 
-                if keys.contains(&Keycode::W) {
+                if key_list.w {
                     v = v + Vec3 {
                         x: 0.,
                         y: 0.,
@@ -166,7 +186,7 @@ impl Game {
                     .rotate_y(self.camera.rotation.x);
                     started = true;
                 }
-                if keys.contains(&Keycode::A) {
+                if key_list.a {
                     v = v + Vec3 {
                         x: -SPEED,
                         y: 0.,
@@ -175,7 +195,7 @@ impl Game {
                     .rotate_y(self.camera.rotation.x);
                     started = true;
                 }
-                if keys.contains(&Keycode::D) {
+                if key_list.d {
                     v = v + Vec3 {
                         x: SPEED,
                         y: 0.,
@@ -184,7 +204,7 @@ impl Game {
                     .rotate_y(self.camera.rotation.x);
                     started = true;
                 }
-                if keys.contains(&Keycode::S) {
+                if key_list.s {
                     v = v + Vec3 {
                         x: 0.,
                         y: 0.,
@@ -193,7 +213,7 @@ impl Game {
                     .rotate_y(self.camera.rotation.x);
                     started = true;
                 }
-                if keys.contains(&Keycode::R) {
+                if key_list.r {
                     return Err("retry");
                 }
             } // add gravity
@@ -230,16 +250,16 @@ impl Game {
             self.camera.update_pos(dt);
 
             //print to when rendering is finished screen
-            if let Ok(buffer) = render_thread.join() {
-                self.renderer.flush(
-                    &buffer,
-                    false,
-                    &format!("{}{}{}", &fps_text, &timer_text, &floor_text),
-                );
-            }
+            // if let Ok(buffer) = render_thread.join() {
+            //     self.renderer.flush(
+            //         &buffer,
+            //         false,
+            //         &format!("{}{}{}", &fps_text, &timer_text, &floor_text),
+            //     );
+            // }
 
             // jump
-            if grounded && keys.contains(&Keycode::Space) && *focused.lock().unwrap() {
+            if grounded && key_list.space && *focused.lock().unwrap() {
                 self.camera.vel.y = -JUMP_SPEED;
                 audio::play_audio(audio_handle, "./sounds/jump.mp3");
                 started = true;
