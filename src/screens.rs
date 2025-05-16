@@ -1,54 +1,55 @@
-use std::io::{stdin, Read};
+use std::io::{stdin, stdout, Read};
 use std::sync::{Arc, Mutex};
 use std::{ffi::OsStr, fs, path::PathBuf, thread};
 
-use device_query::{DeviceQuery, DeviceState, Keycode};
+use crossterm::event::PopKeyboardEnhancementFlags;
+use crossterm::execute;
 use rodio::OutputStream;
 use rodio::OutputStreamHandle;
 use serde_json::{json, Value};
 
-use crate::{audio, mat, network, screens};
+use crate::{audio, mat, network, screens, Keys};
 
 use crate::renderer;
 
-const KEYS_KEYCODE: [(Keycode, &str, &str); 37] = [
-    (Keycode::A, "a", "A"),
-    (Keycode::B, "b", "B"),
-    (Keycode::C, "c", "C"),
-    (Keycode::D, "d", "D"),
-    (Keycode::E, "e", "E"),
-    (Keycode::F, "f", "F"),
-    (Keycode::G, "g", "G"),
-    (Keycode::H, "h", "H"),
-    (Keycode::I, "i", "I"),
-    (Keycode::J, "j", "J"),
-    (Keycode::K, "k", "K"),
-    (Keycode::L, "l", "L"),
-    (Keycode::M, "m", "M"),
-    (Keycode::N, "n", "N"),
-    (Keycode::O, "o", "O"),
-    (Keycode::P, "p", "P"),
-    (Keycode::Q, "q", "Q"),
-    (Keycode::R, "r", "R"),
-    (Keycode::S, "s", "S"),
-    (Keycode::T, "t", "T"),
-    (Keycode::U, "u", "U"),
-    (Keycode::V, "v", "V"),
-    (Keycode::W, "w", "W"),
-    (Keycode::X, "x", "X"),
-    (Keycode::Y, "y", "Y"),
-    (Keycode::Z, "z", "Z"),
-    (Keycode::Key1, "1", "!"),
-    (Keycode::Key2, "2", "\""),
-    (Keycode::Key3, "3", "#"),
-    (Keycode::Key4, "4", "¤"),
-    (Keycode::Key5, "5", "%"),
-    (Keycode::Key6, "6", "&"),
-    (Keycode::Key7, "7", "/"),
-    (Keycode::Key8, "8", "("),
-    (Keycode::Key9, "9", ")"),
-    (Keycode::Key0, "0", "="),
-    (Keycode::Space, " ", " "),
+const KEYS_KEYCODE: [(char, char); 37] = [
+    ('a', 'A'),
+    ('b', 'B'),
+    ('c', 'C'),
+    ('d', 'D'),
+    ('e', 'E'),
+    ('f', 'F'),
+    ('g', 'G'),
+    ('h', 'H'),
+    ('i', 'I'),
+    ('j', 'J'),
+    ('k', 'K'),
+    ('l', 'L'),
+    ('m', 'M'),
+    ('n', 'N'),
+    ('o', 'O'),
+    ('p', 'P'),
+    ('q', 'Q'),
+    ('r', 'R'),
+    ('s', 'S'),
+    ('t', 'T'),
+    ('u', 'U'),
+    ('v', 'V'),
+    ('w', 'W'),
+    ('x', 'X'),
+    ('y', 'Y'),
+    ('z', 'Z'),
+    ('1', '!'),
+    ('2', '\"'),
+    ('3', '#'),
+    ('4', '¤'),
+    ('5', '%'),
+    ('6', '&'),
+    ('7', '/'),
+    ('8', '('),
+    ('9', ')'),
+    ('0', '='),
+    (' ', ' '),
 ];
 
 const TITLE_L: &str = r#"                  ___           ___           ___                       ___           ___           ___           ___     
@@ -251,8 +252,8 @@ pub fn menu(
     levels: Vec<PathBuf>,
     audio_handle: &OutputStreamHandle,
     focused: Arc<Mutex<bool>>,
+    keys: Arc<Mutex<Keys>>
 ) -> usize {
-    let device_state = DeviceState::new();
     let mut chosen_level = 0;
     let level_names: Vec<&OsStr> = levels
         .iter()
@@ -503,25 +504,25 @@ pub fn menu(
 
         //match input
         loop {
-            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
+            let mut key_list = if *focused.lock().unwrap() {keys.lock().unwrap().clone_reset_enter()} else {Keys::default()};
 
-            if keys.contains(&Keycode::Down) && chosen_level != level_names.len() as u16 - 1 {
+            if key_list.down && chosen_level != level_names.len() as u16 - 1 {
                 chosen_level += 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Up) && chosen_level != 0 {
+            if key_list.up && chosen_level != 0 {
                 chosen_level = chosen_level.saturating_sub(1);
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Enter) {
+            if key_list.enter {
                 // audio::play_audio(&audio_handle, "./sounds/enter.mp3");
                 // thread::sleep_ms(800);
 
                 return chosen_level as usize;
             }
-            if keys.contains(&Keycode::L) {
+            if key_list.l {
                 if !(leaderboard(
                     level_id,
                     level_names[chosen_level as usize]
@@ -529,14 +530,15 @@ pub fn menu(
                         .unwrap()
                         .to_string(),
                     focused.clone(),
+                    keys.clone(),
                 )) {
                     exit_app();
                 };
                 menu_print();
                 break;
             }
-            if keys.contains(&Keycode::E) {
-                if screens::exit(focused.clone()) {
+            if key_list.e {
+                if screens::exit(focused.clone(), keys.clone()) {
                     exit_app();
                 };
                 menu_print();
@@ -546,8 +548,7 @@ pub fn menu(
     }
 }
 
-pub fn leaderboard(level_id: String, level_name: String, focused: Arc<Mutex<bool>>) -> bool {
-    let device_state = DeviceState::new();
+pub fn leaderboard(level_id: String, level_name: String, focused: Arc<Mutex<bool>>, keys: Arc<Mutex<Keys>>) -> bool {
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
     let screen_height = screen_height as u16;
@@ -651,28 +652,32 @@ pub fn leaderboard(level_id: String, level_name: String, focused: Arc<Mutex<bool
 
         //match input
         loop {
-            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
+            let keys = if *focused.lock().unwrap() {
+                keys.lock().unwrap().clone_reset_enter()
+            }
+            else {
+                Keys::default()
+            };
 
-            if keys.contains(&Keycode::Up) {
+            if keys.up {
                 scroll = scroll.saturating_sub(1);
                 break;
             }
-            if keys.contains(&Keycode::Down) {
+            if keys.down {
                 if scroll < leader_vec.len() - take {
                     scroll += 1;
                 }
 
                 break;
             }
-            if keys.contains(&Keycode::E) {
+            if keys.e {
                 return true;
             }
         }
     }
 }
 
-pub fn game_over(arg: &str, focused: Arc<Mutex<bool>>) -> bool {
-    let device_state = DeviceState::new();
+pub fn game_over(arg: &str, focused: Arc<Mutex<bool>>, keys: Arc<Mutex<Keys>>) -> bool {
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
     let screen_height = screen_height as u16;
@@ -756,23 +761,29 @@ pub fn game_over(arg: &str, focused: Arc<Mutex<bool>>) -> bool {
 
         //match input
         loop {
-            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
 
-            if keys.contains(&Keycode::Down) {
+            let mut key_list = if *focused.lock().unwrap() {
+                keys.lock().unwrap().clone_reset_enter()
+            }
+            else {
+                Keys::default()
+            };
+            
+            if key_list.down {
                 try_again = !try_again;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Up) {
+            if key_list.up {
                 try_again = !try_again;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Enter) {
+            if key_list.enter {
                 return try_again;
             }
-            if keys.contains(&Keycode::E) {
-                if exit(focused.clone()) {
+            if key_list.e {
+                if exit(focused.clone(), keys.clone()) {
                     exit_app();
                 }
                 break;
@@ -781,9 +792,8 @@ pub fn game_over(arg: &str, focused: Arc<Mutex<bool>>) -> bool {
     }
 }
 
-pub fn finish(time: f64, level_name: &str, level_map: &str, focused: Arc<Mutex<bool>>) -> u8 {
+pub fn finish(time: f64, level_name: &str, level_map: &str, focused: Arc<Mutex<bool>>, keys: Arc<Mutex<Keys>>) -> u8 {
     // get device state for input
-    let device_state = DeviceState::new();
 
     // get terminal size
     let (screen_width, screen_height) = renderer::get_terminal_size();
@@ -960,47 +970,47 @@ pub fn finish(time: f64, level_name: &str, level_map: &str, focused: Arc<Mutex<b
 
         //match input
         'input_loop: loop {
-            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
+            let mut key_list = if *focused.lock().unwrap() {
+                keys.lock().unwrap().clone_reset_enter()
+            } else {
+                Keys::default()
+            };
 
             for key in KEYS_KEYCODE {
-                if keys.contains(&key.0) && chosen == 0 {
-                    if keys.contains(&Keycode::LShift) {
-                        name += key.2;
-                    } else {
-                        name += key.1;
-                    }
+                if key_list.other.contains(&key.0) && chosen == 0 {
+                    name.push(key.0);
                     break 'input_loop;
                 }
             }
 
-            if keys.contains(&Keycode::Backspace) && chosen == 0 {
+            if key_list.delete && chosen == 0 {
                 name.pop();
                 break;
             }
 
-            if keys.contains(&Keycode::Down) && chosen != 2 {
+            if key_list.down && chosen != 2 {
                 chosen += 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Up) && chosen != 0 {
+            if key_list.up && chosen != 0 {
                 chosen -= 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::Enter) && chosen != 0 {
+            if key_list.enter && chosen != 0 {
                 if !name.is_empty() {
                     network::log_result(&id, &name, time);
                 }
                 return chosen;
             }
-            if keys.contains(&Keycode::Enter) && chosen == 0 {
+            if key_list.enter && chosen == 0 {
                 chosen += 1;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
-            if keys.contains(&Keycode::E) && chosen != 0 {
-                if exit(focused.clone()) {
+            if key_list.e && chosen != 0 {
+                if exit(focused.clone(), keys.clone()) {
                     exit_app();
                 }
                 break;
@@ -1009,8 +1019,7 @@ pub fn finish(time: f64, level_name: &str, level_map: &str, focused: Arc<Mutex<b
     }
 }
 
-pub fn exit(focused: Arc<Mutex<bool>>) -> bool {
-    let device_state = DeviceState::new();
+pub fn exit(focused: Arc<Mutex<bool>>, keys: Arc<Mutex<Keys>>) -> bool {
     let (screen_width, screen_height) = renderer::get_terminal_size();
     let screen_width = screen_width as u16;
     let screen_height = screen_height as u16;
@@ -1095,15 +1104,15 @@ pub fn exit(focused: Arc<Mutex<bool>>) -> bool {
 
         //match input
         loop {
-            let keys = mat::get_keys_conditional(focused.lock().unwrap().clone());
+ let key_list =            if *focused.lock().unwrap() {keys.lock().unwrap().clone_reset_enter()} else {Keys::default()};
 
-            if keys.contains(&Keycode::Down) || keys.contains(&Keycode::Up) {
+            if key_list.down || key_list.up {
                 exit = !exit;
                 audio::play_audio(&audio_handle, "./sounds/pop.mp3");
                 break;
             }
 
-            if keys.contains(&Keycode::Enter) {
+            if key_list.enter {
                 return exit;
             }
         }
@@ -1112,6 +1121,8 @@ pub fn exit(focused: Arc<Mutex<bool>>) -> bool {
 
 fn exit_app() {
     let _ = crossterm::terminal::disable_raw_mode();
+    let mut stdout = stdout(); 
+    execute!(stdout, PopKeyboardEnhancementFlags);
 
     println!("\x1b[2J\x1b[H\x1b[48;2;0;0;0mGame closing\r");
     let _ = thread::spawn(|| {

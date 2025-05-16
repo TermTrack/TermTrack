@@ -1,6 +1,5 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-use device_query::{DeviceQuery, Keycode};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec3 {
@@ -390,11 +389,3 @@ pub fn check_collision(
     t
 }
 
-pub fn get_keys_conditional(check: bool) -> Vec<Keycode> {
-    let keys = device_query::DeviceState::new();
-    let mut keys = keys.get_keys();
-    if !check {
-        keys = vec![];
-    }
-    keys
-}

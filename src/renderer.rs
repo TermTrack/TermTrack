@@ -193,6 +193,61 @@ impl Screen {
         buffer
     }
 
+    pub fn render_oct_mt(&self, camera: &Camera, tris: &[Tri]) -> Vec<Vec<Vec3>> {
+        let mut buffer = vec![
+            vec![
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 0.
+                };
+                self.w
+            ];
+            self.h
+        ];
+
+        buffer.par_iter_mut().enumerate().for_each(|(y, row)| {
+            row.par_iter_mut().enumerate().for_each(|(x, pixel)| {
+                let mut min_dist = f64::MAX;
+                let mut color = Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 0.,
+                };
+                let min_dim = self.w.min(self.h * 2) as f64 / 2.;
+                let pixel_coords = Vec3 {
+                    x: (x as f64 - self.w as f64 / 2.) / min_dim,
+                    y: (y as f64 * 2. - self.h as f64 / 2.) / min_dim,
+                    z: camera.focus_length,
+                };
+                let pixel_coords = pixel_coords.rotate(camera.rotation);
+                let ray_dir = pixel_coords;
+                let ray_o = camera.pos;
+                let mut closet_idx = None;
+                tris.iter().enumerate().for_each(|(idx, tri)| {
+                    let (hit, distance) = tri.hit_mt(ray_o, ray_dir);
+                    if hit && distance < min_dist {
+                        min_dist = distance;
+
+                        closet_idx = Some(idx);
+                    }
+                });
+                if let Some(idx) = closet_idx {
+                    let tri = tris[idx];
+                    color = tri.color;
+                    let n = tri.normal();
+                    color = color
+                        * (n.dot(ray_dir * (-1.)) / (ray_dir.abs() * n.abs()))
+                            .abs()
+                            .clamp(0.5, 1.);
+                }
+                color = color * (1. - min_dist / RENDER_DIST);
+                *pixel = color;
+            });
+        });
+        buffer
+    }
+
     fn print_info(&self, camera: &Camera, extra: &str) {
         print!("\x1b[48;1;0m{:<1$}", extra, self.w);
     }
