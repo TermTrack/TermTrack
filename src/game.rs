@@ -10,6 +10,7 @@ use crate::{audio, LevelMap};
 use crate::{camera::Camera, mat::*};
 use crate::{screens, GH};
 use core::panic;
+use std::io::stdout;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -82,13 +83,17 @@ impl Game {
             let fps_text = format!("fps: {:.2?} ", 1. / (dt));
             let timer_text = format!("time: {:.1?} ", level_timer);
             let floor_text = format!(
-                "floor: {}/{}",
+                "floor: {}/{} ",
                 (-self.camera.pos.y.div_euclid(GH) + 1.).clamp(0., floors as f64) as usize,
                 floors
             );
+            let resolution_text = format!(
+            "res: {}x{}",
+            self.renderer.w,self.renderer.h*2
+            );
 
             // limit dt for low framerate
-            let dt = dt.min(0.2);
+            let dt = dt.min(0.1);
             //update timer if started moving
             if started {
                 level_timer += dt;
@@ -121,10 +126,15 @@ impl Game {
             let n_renderer = terminal_renderer::renderer::Screen {
                 w: renderer.w,
                 h: renderer.h*2-2,
-                focus_dist: cam.focus_length as f32
+                focus_dist: cam.focus_length as f32 / 2.
             };
+
+            let mut stdout = stdout();
+        crossterm::execute!(stdout, crossterm::cursor::Hide).unwrap();
             
-            n_renderer.render_octree(&new_cam, &render_mesh, &[]);
+            n_renderer.render_octree(&new_cam, &render_mesh, &[], 100.);
+
+            print!("{}{}{}{}", fps_text, timer_text, floor_text, resolution_text);
              
             // get held keys
             let key_list = keys.lock().unwrap().clone_reset_enter(); 

@@ -1,3 +1,4 @@
+use crossterm::cursor::Hide;
 use crossterm::event::{poll, read, Event, KeyCode, KeyModifiers, KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use crossterm::{self, execute};
 use loader::*;
@@ -61,7 +62,10 @@ execute!(
     PushKeyboardEnhancementFlags(
         KeyboardEnhancementFlags::REPORT_EVENT_TYPES
     )
+    , Hide
 );
+
+
     
     let level_dir = env::args().collect::<Vec<String>>()[1].clone();
     let entries = fs::read_dir(level_dir).unwrap();
